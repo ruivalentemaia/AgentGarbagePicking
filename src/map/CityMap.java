@@ -3,6 +3,7 @@ package map;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Random;
 
 public class CityMap {
@@ -201,7 +202,7 @@ public class CityMap {
 												new Point(currentWidth + minRoadLength + 1,
 														  c.getCenter().getY()));
 				this.crossroads.add(cNew);
-				currentWidth = c.getCenter().getX();
+				currentWidth = cNew.getCenter().getX();
 				emptySpace = (this.getWidth() - currentWidth) - distanceToKeep;
 				counter++;
 			}
@@ -231,7 +232,7 @@ public class CityMap {
 												new Point(currentWidth - minRoadLength - 1,
 														  c.getCenter().getY()));
 				this.crossroads.add(cNew);
-				currentWidth = c.getCenter().getX();
+				currentWidth = cNew.getCenter().getX();
 				emptySpace = currentWidth - distanceToKeep;
 				counter++;
 			}
@@ -250,7 +251,10 @@ public class CityMap {
 		int crossroadsCounter = 1;
 		Random rMinDistance = new Random();
 		List<Crossroads> tempCrossroads = new ArrayList<Crossroads>();
+		Iterator<Crossroads> itTemp = tempCrossroads.iterator();
+		
 		Iterator<Crossroads> iterator = this.crossroads.iterator();
+		
 		
 		int minRoadLength = rMinDistance.nextInt( (this.height/10) - 2) + 2;
 		
@@ -259,8 +263,7 @@ public class CityMap {
 		crossroadsCounter += this.generateCrossroadsDown(first, distanceToKeep, minRoadLength);
 		
 		//copies all the current Crossroads to the tempCrossroads ArrayList.
-		while(iterator.hasNext()){
-			Crossroads c = iterator.next();
+		for(Crossroads c : this.crossroads){
 			tempCrossroads.add(c);
 		}
 		
@@ -298,14 +301,14 @@ public class CityMap {
 		
 		//generates random width between 100 and 400.
 		Random width = new Random();
-		lower = 100;
-		higher = 400;
+		lower = 40;
+		higher = 80;
 		this.width = width.nextInt(higher-lower) + lower;
 		
 		//generates random height between 100 and 400.
 		Random height = new Random();
-		lower = 100;
-		higher = 400;
+		lower = 40;
+		higher = 80;
 		this.height = height.nextInt(higher-lower) + lower;
 		
 		//fills the points arraylist with points.
@@ -328,6 +331,42 @@ public class CityMap {
 		int distanceToKeep = rDistanceToKeep.nextInt(5-2) + 2;
 		int maxRoadLength = rMaxRoadLength.nextInt(this.height/3 - 4) + 4;
 		this.createRemainingCrossroads(firstCrossroads, distanceToKeep, maxRoadLength);
+	}
+	
+	
+	/*
+	 * Prints the CityMap in a String sequence.
+	 */
+	public void printCityMapString() {
+		String[][] cityMap = new String[this.width-1][this.height-1];
+		
+		//allocates in the cityMap the housing area (that for now is all the area)
+		for(int i = 0; i < cityMap.length; i++){
+			for(int j = 0; j < cityMap[0].length; j++){
+				cityMap[i][j] = "h";
+			}
+		}
+		
+		//allocates in the cityMap String the crossroads centers.
+		Iterator<Crossroads> it = this.crossroads.iterator();
+		int x = 0, y = 0;
+		while(it.hasNext()) {
+			Crossroads c = it.next();
+			x = c.getCenter().getX();
+			y = c.getCenter().getY();
+			cityMap[x][y] = "c";
+		}
+		
+		String debugPrinter = "";
+		for(int i = 0; i < cityMap.length; i++){
+			for(int j = 0; j < cityMap[0].length; j++){
+				debugPrinter += cityMap[i][j] + " ";
+			}
+			debugPrinter += "\n";
+		}
+		
+		System.out.println(debugPrinter);
+		System.out.println();
 	}
 	
 }
