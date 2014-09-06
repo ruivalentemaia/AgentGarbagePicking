@@ -1,6 +1,7 @@
 package map;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -78,10 +79,11 @@ public class CityMap {
 		this.garbageContainers = garbageContainers;
 	}
 	
+	
 	/*
 	 * Create one Road with random dimensions, id and direction.
 	 */
-	public Road randomizeRoad(Point startingPoint) {
+	private Road randomizeRoad(Point startingPoint) {
 		//generates a random id between 100 and 1.
 		int id = 0;
 		Random rId = new Random();
@@ -118,17 +120,165 @@ public class CityMap {
 		return new Road(id, direction, length);
 	}
 	
+	
 	/*
 	 * Returns a randomly generated center Point to be used
 	 * in the constructor of a Crossroads object.
 	 */
-	public Point randomizeCrossroadsCenter() {
+	private Point randomizeCrossroadsCenter() {
 		int x = 0, y = 0;
 		Random rX = new Random();
 		Random rY = new Random();
 		x = rX.nextInt(this.width - 1) + 1;
 		y = rY.nextInt(this.height - 1) + 1;
 		return new Point(x,y);
+	}
+	
+	
+	/*
+	 * Checks if it's possible to add crossroads to the upper border.
+	 * If it is, then it'll keep adding crossroads up till the minimum
+	 * distanceToKeep is passed.
+	 */
+	private int generateCrossroadsUp(Crossroads c, int distanceToKeep, int minRoadLength){
+		int counter = 0;
+		int currentHeight = c.getCenter().getY();
+		int emptySpace = currentHeight - distanceToKeep;
+		while( (emptySpace - minRoadLength) > 0) {
+			Crossroads cNew = new Crossroads(c.getId() + 1, 
+											new Point(c.getCenter().getX(), 
+													  currentHeight - minRoadLength - 1));
+			
+			this.crossroads.add(cNew);
+			currentHeight = cNew.getCenter().getY();
+			emptySpace = currentHeight - distanceToKeep;
+			counter++;
+		}
+		return counter;
+	}
+	
+	
+	/*
+	 * Checks if it's possible to add crossroads to the lower border.
+	 * If it is, then it'll keep adding crossroads down till the minimum
+	 * distanceToKeep is passed.
+	 */
+	private int generateCrossroadsDown(Crossroads c, int distanceToKeep, int minRoadLength){
+		int counter = 0;
+		int currentHeight = c.getCenter().getY();
+		int emptySpace = (this.getHeight() - currentHeight) - distanceToKeep;
+		while( (emptySpace - minRoadLength) > 0) {
+			Crossroads cNew = new Crossroads(c.getId() + 1, 
+											new Point(c.getCenter().getX(), 
+													  currentHeight + minRoadLength + 1));
+			
+			this.crossroads.add(cNew);
+			currentHeight = cNew.getCenter().getY();
+			emptySpace = (this.getHeight() - currentHeight) - distanceToKeep;
+		}
+		return counter;
+	}
+	
+	
+	/*
+	 * Generates all possible Crossroads to the right (until the end of the right side of the map)
+	 * for each one of the previously generated crossroads, allocated in tempCrossroads
+	 * ArrayList.
+	 */
+	private int generateCrossroadsRight(List<Crossroads> tempCrossroads, int distanceToKeep, int minRoadLength) {
+		int currentWidth = 0;
+		int emptySpace = 0;
+		int currentId = 0;
+		int counter = 0;
+		Iterator<Crossroads> it = tempCrossroads.iterator();
+		while(it.hasNext()){
+			Crossroads c = it.next();
+			currentWidth = c.getCenter().getX();
+			emptySpace = (this.getWidth() - currentWidth) - distanceToKeep;
+			currentId = tempCrossroads.size();
+			while( (emptySpace - minRoadLength) > 0){
+				Crossroads cNew = new Crossroads(currentId++,
+												new Point(currentWidth + minRoadLength + 1,
+														  c.getCenter().getY()));
+				this.crossroads.add(cNew);
+				currentWidth = c.getCenter().getX();
+				emptySpace = (this.getWidth() - currentWidth) - distanceToKeep;
+				counter++;
+			}
+		}
+		return counter;
+	}
+	
+	
+	/*
+	 * Generates all possible Crossroads to the left (until the end of the left side of the map)
+	 * for each one of the previously generated crossroads, allocated in tempCrossroads
+	 * ArrayList.
+	 */
+	private int generateCrossroadsLeft(List<Crossroads> tempCrossroads, int distanceToKeep, int minRoadLength) {
+		int currentWidth = 0;
+		int emptySpace = 0;
+		int currentId = 0;
+		int counter = 0;
+		Iterator<Crossroads> it = tempCrossroads.iterator();
+		while(it.hasNext()){
+			Crossroads c = it.next();
+			currentWidth = c.getCenter().getX();
+			emptySpace = currentWidth - distanceToKeep;
+			currentId = tempCrossroads.size();
+			while( (emptySpace - minRoadLength) > 0){
+				Crossroads cNew = new Crossroads(currentId++,
+												new Point(currentWidth - minRoadLength - 1,
+														  c.getCenter().getY()));
+				this.crossroads.add(cNew);
+				currentWidth = c.getCenter().getX();
+				emptySpace = currentWidth - distanceToKeep;
+				counter++;
+			}
+		}
+		return counter;
+	}
+	
+	
+	/*
+	 * From the information of the Crossroads passed as parameter,
+	 * it creates other Crossroads. The Crossroads are created until
+	 * the stopping rule (remaining distance to the borders of the map)
+	 * is fulfilled.
+	 */
+	private void createRemainingCrossroads(Crossroads first, int distanceToKeep, int maxRoadLength) {
+		int crossroadsCounter = 1;
+		Random rMinDistance = new Random();
+		List<Crossroads> tempCrossroads = new ArrayList<Crossroads>();
+		Iterator<Crossroads> iterator = this.crossroads.iterator();
+		
+		int minRoadLength = rMinDistance.nextInt( (this.height/10) - 2) + 2;
+		
+		//generates all possible Crossroads up and down first.
+		crossroadsCounter += this.generateCrossroadsUp(first, distanceToKeep, minRoadLength);
+		crossroadsCounter += this.generateCrossroadsDown(first, distanceToKeep, minRoadLength);
+		
+		//copies all the current Crossroads to the tempCrossroads ArrayList.
+		while(iterator.hasNext()){
+			Crossroads c = iterator.next();
+			tempCrossroads.add(c);
+		}
+		
+		/*
+		 * generates all possible Crossroads for the right and left
+		 * for each one of the Crossroads in the tempCrossroads ArrayList.
+		 */
+		crossroadsCounter += this.generateCrossroadsRight(tempCrossroads, distanceToKeep, minRoadLength);
+		crossroadsCounter += this.generateCrossroadsLeft(tempCrossroads, distanceToKeep, minRoadLength);
+		
+		System.out.println("\nNumber of Crossroads created = " + crossroadsCounter);
+	}
+	
+	/*
+	 * 
+	 */
+	private void connectCreatedCrossroads() {
+		
 	}
 	
 	
@@ -171,6 +321,13 @@ public class CityMap {
 		Crossroads firstCrossroads = new Crossroads(1, this.randomizeCrossroadsCenter());
 		this.crossroads = new ArrayList<Crossroads>();
 		this.crossroads.add(firstCrossroads);
+		
+		//create the remaining necessary Crossroads.
+		Random rDistanceToKeep = new Random();
+		Random rMaxRoadLength = new Random();
+		int distanceToKeep = rDistanceToKeep.nextInt(5-2) + 2;
+		int maxRoadLength = rMaxRoadLength.nextInt(this.height/3 - 4) + 4;
+		this.createRemainingCrossroads(firstCrossroads, distanceToKeep, maxRoadLength);
 	}
 	
 }
