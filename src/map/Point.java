@@ -26,4 +26,13 @@ public class Point {
 		this.x = x;
 		this.y = y;
 	}
+	
+	/*
+	 * Checks if a parameter Point b is equal to this point.
+	 */
+	public boolean isEqual(Point b){
+		if( (this.getX() == b.getX()) && (this.getY() == b.getY()))
+			return true;
+		else return false;
+	}
 }

@@ -1,5 +1,7 @@
 package map;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Road {
@@ -40,6 +42,7 @@ public class Road {
 	public void setPoints(List<Point> points) {
 		this.points = points;
 	}
+	
 	
 	/*
 	 * Constructor of a Road object with parameters

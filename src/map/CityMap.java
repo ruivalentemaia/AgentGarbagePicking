@@ -1,6 +1,8 @@
 package map;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -15,6 +17,34 @@ public class CityMap {
 	private List<Road> roads;
 	private List<Crossroads> crossroads;
 	private List<GarbageContainer> garbageContainers;
+	
+	//Comparators to order Crossroads
+	static private Comparator<Crossroads> orderCrossroadsWidthDesc;
+	static private Comparator<Crossroads> orderCrossroadsWidthAsc;
+	
+	static {
+		orderCrossroadsWidthDesc = new Comparator<Crossroads>() {
+			@Override
+			public int compare(Crossroads o1, Crossroads o2) {
+				if(o1.getCenter().getX() == o2.getCenter().getX())
+					return 0;
+				else if(o1.getCenter().getX() > o2.getCenter().getX())
+					return -1;
+				else return 1;
+			}
+		};
+		
+		orderCrossroadsWidthAsc = new Comparator<Crossroads>() {
+			@Override
+			public int compare(Crossroads o1, Crossroads o2) {
+				if(o1.getCenter().getX() == o2.getCenter().getX())
+					return 0;
+				else if(o1.getCenter().getX() > o2.getCenter().getX())
+					return 1;
+				else return -1;
+			}
+		};
+	}
 	
 	public int getId() {
 		return id;
@@ -80,58 +110,63 @@ public class CityMap {
 		this.garbageContainers = garbageContainers;
 	}
 	
-	
 	/*
-	 * Create one Road with random dimensions, id and direction.
+	 * Orders an array of Crossroads by each Crossroads' width
+	 * in descending order (higher width first).
 	 */
-	private Road randomizeRoad(Point startingPoint) {
-		//generates a random id between 100 and 1.
-		int id = 0;
-		Random rId = new Random();
-		id = rId.nextInt(100-1) + 1;
-		
-		//generates number between 1 and 3 to define direction of the road.
-		String direction = "";
-		int dir = 0;
-		Random rDir = new Random();
-		dir = rDir.nextInt(3-1) + 1;
-		switch(dir) {
-			//left
-			case 1:
-				direction = "<";
-				break;
-			//right	
-			case 2:
-				direction = ">";
-				break;
-			//both	
-			case 3:
-				direction = "=";
-				break;
-			default:
-				direction = "";
-				break;
-		}
-		
-		//generates a width between the 1 and this maps's height divided by a hundred.
-		int length = 0;
-		Random rWidth = new Random();
-		length = rWidth.nextInt( (this.height / 10) - 1) + 1;
-		
-		return new Road(id, direction, length);
+	public void orderCrossroadsWidthDesc(Crossroads[] crossroads){
+		Arrays.sort(crossroads, orderCrossroadsWidthDesc);
 	}
 	
+	
+	/*
+	 * Orders an array of Crossroads by each Crossroads' width
+	 * in ascending order (lower width first).
+	 */
+	public void orderCrossroadsWidthAsc(Crossroads[] crossroads) {
+		Arrays.sort(crossroads, orderCrossroadsWidthAsc);
+	}
+	
+	
+	/*
+	 * Converts an ArrayList of Crossroads to an array of Crossroads.
+	 */
+	private Crossroads[] convertArrayListCrossroadsToArray(List<Crossroads> crossroads) {
+		Crossroads[] crossroadsArray = new Crossroads[crossroads.size()];
+		return crossroads.toArray(crossroadsArray);
+	}
+	
+	/*
+	 * Converts an array of Crossroads to an ArrayList of the same type.
+	 */
+	private List<Crossroads> convertArrayCrossroadsToArrayList(Crossroads[] crossroads) {
+		List<Crossroads> crossroadsList = new ArrayList<Crossroads>();
+		for(int i = 0; i < crossroads.length; i++) {
+			crossroadsList.add(crossroads[i]);
+		}
+		return crossroadsList;
+	}
+	
+	
+	
+	/*
+	 * 
+	 * 
+	 * 						CROSSROADS GENERATION
+	 * 
+	 * 
+	 */
 	
 	/*
 	 * Returns a randomly generated center Point to be used
 	 * in the constructor of a Crossroads object.
 	 */
-	private Point randomizeCrossroadsCenter() {
+	private Point randomizeCrossroadsCenter(int distanceToKeep) {
 		int x = 0, y = 0;
 		Random rX = new Random();
 		Random rY = new Random();
-		x = rX.nextInt(this.width - 1) + 1;
-		y = rY.nextInt(this.height - 1) + 1;
+		x = rX.nextInt(this.width - distanceToKeep) + distanceToKeep;
+		y = rY.nextInt(this.height - distanceToKeep) + distanceToKeep;
 		return new Point(x,y);
 	}
 	
@@ -145,7 +180,7 @@ public class CityMap {
 		int counter = 0;
 		int currentHeight = c.getCenter().getY();
 		int emptySpace = currentHeight - distanceToKeep;
-		while( (emptySpace - minRoadLength) > 0) {
+		while( (emptySpace - minRoadLength - distanceToKeep) > 0) {
 			Crossroads cNew = new Crossroads(c.getId() + 1, 
 											new Point(c.getCenter().getX(), 
 													  currentHeight - minRoadLength - 1));
@@ -168,7 +203,7 @@ public class CityMap {
 		int counter = 0;
 		int currentHeight = c.getCenter().getY();
 		int emptySpace = (this.getHeight() - currentHeight) - distanceToKeep;
-		while( (emptySpace - minRoadLength) > 0) {
+		while( (emptySpace - minRoadLength-distanceToKeep) > 0) {
 			Crossroads cNew = new Crossroads(c.getId() + 1, 
 											new Point(c.getCenter().getX(), 
 													  currentHeight + minRoadLength + 1));
@@ -251,12 +286,7 @@ public class CityMap {
 		int crossroadsCounter = 1;
 		Random rMinDistance = new Random();
 		List<Crossroads> tempCrossroads = new ArrayList<Crossroads>();
-		Iterator<Crossroads> itTemp = tempCrossroads.iterator();
-		
-		Iterator<Crossroads> iterator = this.crossroads.iterator();
-		
-		
-		int minRoadLength = rMinDistance.nextInt( (this.height/10) - 2) + 2;
+		int minRoadLength = rMinDistance.nextInt( (this.height/5) - 2) + 2;
 		
 		//generates all possible Crossroads up and down first.
 		crossroadsCounter += this.generateCrossroadsUp(first, distanceToKeep, minRoadLength);
@@ -277,11 +307,245 @@ public class CityMap {
 		System.out.println("\nNumber of Crossroads created = " + crossroadsCounter);
 	}
 	
+	
+	
 	/*
 	 * 
+	 * 
+	 * 							ROADS GENERATION
+	 * 
+	 * 
 	 */
-	private void connectCreatedCrossroads() {
+	
+	
+	/*
+	 * Builds an array of Crossroads where all the Crossroads have the same
+	 * height in the map, where height is passed as parameter to the method.
+	 */
+	private Crossroads[] retrieveCrossroadsWithSameHeight(Crossroads[] tempCross, int height) {
 		
+		//counts elements with that same height first.
+		int counter = 0;
+		for(int i = 0; i < tempCross.length; i++){
+			if(tempCross[i].getCenter().getY() == height)
+				counter++;
+		}
+		
+		//then declares the array
+		Crossroads[] crossroads = new Crossroads[counter];
+		
+		//then fills it with the objects with the height parameter.
+		counter = 0;
+		for(int i = 0; i < tempCross.length; i++){
+			if(tempCross[i].getCenter().getY() == height) {
+				crossroads[counter] = tempCross[i];
+				counter++;
+			}
+			else continue;
+		}
+		
+		return crossroads;
+	}
+	
+	
+	/*
+	 * Builds an array of Crossroads where all the Crossroads have the same
+	 * width in the map, where width is passed as parameter to the method.
+	 */
+	private Crossroads[] retrieveCrossroadsWithSameWidth(Crossroads[] tempCross, int width) {
+		//counts elements with that same height first.
+		int counter = 0;
+		for(int i = 0; i < tempCross.length; i++){
+			if(tempCross[i].getCenter().getX() == width)
+				counter++;
+		}
+		
+		//then declares the array
+		Crossroads[] crossroads = new Crossroads[counter];
+		
+		//then fills it with the objects with the height parameter.
+		counter = 0;
+		for(int i = 0; i < tempCross.length; i++){
+			if(tempCross[i].getCenter().getX() == width) {
+				crossroads[counter] = tempCross[i];
+				counter++;
+			}
+			else continue;
+		}
+		
+		return crossroads;
+	}
+	
+	
+	/*
+	 * Creates the left and right Road objects for each one
+	 * of the previously created Crossroads.
+	 */
+	private void generateRoadsLeftAndRight() {
+		List<Crossroads> newCrossroads = new ArrayList<Crossroads>();
+		Crossroads[] crossroadsArray = this.convertArrayListCrossroadsToArray(this.crossroads);
+		this.orderCrossroadsWidthDesc(crossroadsArray);
+		
+		int currentHeight = crossroadsArray[0].getCenter().getY();
+		int currentWidth = crossroadsArray[0].getCenter().getX();
+		int counterNumberDifferentWidth = this.retrieveCrossroadsWithSameWidth(crossroadsArray, currentWidth).length;
+		int counterNumberDifferentHeight = this.retrieveCrossroadsWithSameHeight(crossroadsArray, currentHeight).length;
+		int counterRoadId = 1;
+		
+		/*
+		 * Generate Roads left and allocates them in each of
+		 * the Crossroads where they belong.
+		 */
+		for(int i = 0; i < counterNumberDifferentHeight; i++){
+			
+			Crossroads[] tempCrossroads = this.retrieveCrossroadsWithSameHeight
+												(crossroadsArray, currentHeight);
+			currentHeight = crossroadsArray[counterNumberDifferentWidth].getCenter().getY();
+			this.convertArrayCrossroadsToArrayList(crossroadsArray);
+			
+			for(int j = 0; j < tempCrossroads.length; j++) {
+				if(j == 0) {
+					int length = (tempCrossroads[j].getCenter().getX() - 
+								 tempCrossroads[j+1].getCenter().getX()) - 1;
+					
+					//left Road.
+					Road left = new Road(counterRoadId, "both", length);
+					
+					//Road points
+					List<Point> roadPoints = new ArrayList<Point>();
+					for(int k = 1; k <= length; k++){
+						Point p = new Point(tempCrossroads[j].getCenter().getX() - k,
+											tempCrossroads[j].getCenter().getY());
+						roadPoints.add(p);
+					}
+					
+					left.setPoints(roadPoints);
+					tempCrossroads[j].setR1(left);
+					
+					this.roads.add(left);
+					counterRoadId++;
+					
+					//right Road.
+					length = (this.width - tempCrossroads[j].getCenter().getX()) - 1;
+					Road right = new Road(counterRoadId, "both", length);
+					
+					roadPoints = new ArrayList<Point>();
+					for(int k = 1; k <= length; k++){
+						Point p = null;
+						if( (tempCrossroads[j].getCenter().getX()+k) < this.width) {
+							p = new Point(tempCrossroads[j].getCenter().getX() + k,
+									tempCrossroads[j].getCenter().getY());
+							roadPoints.add(p);
+						}
+					}
+					right.setPoints(roadPoints);
+					tempCrossroads[j].setR3(right);
+					
+					this.roads.add(right);
+					counterRoadId++;
+					
+					newCrossroads.add(tempCrossroads[j]);
+				}
+				
+				else if((j != 0) && (j != tempCrossroads.length - 1)){
+					
+					int length = (tempCrossroads[j].getCenter().getX() - 
+							 	 tempCrossroads[j+1].getCenter().getX()) - 1;
+					
+					//left Road.
+					Road left = new Road(counterRoadId, "both", length);
+					
+					//Road points
+					List<Point> roadPoints = new ArrayList<Point>();
+					for(int k = 1; k <= length; k++){
+						Point p = new Point(tempCrossroads[j].getCenter().getX() - k,
+											tempCrossroads[j].getCenter().getY());
+						roadPoints.add(p);
+					}
+					left.setPoints(roadPoints);
+					tempCrossroads[j].setR1(left);
+					
+					//right Road.
+					Road right = tempCrossroads[j-1].getR1();
+					
+					roadPoints = new ArrayList<Point>();
+					for(int k = 1; k <= length; k++){
+						Point p = null;
+						if( (tempCrossroads[j].getCenter().getX()+k) < this.width) {
+							p = new Point(tempCrossroads[j].getCenter().getX() + k,
+									tempCrossroads[j].getCenter().getY());
+							roadPoints.add(p);
+						}
+					}
+					right.setPoints(roadPoints);
+					tempCrossroads[j].setR3(right);
+					
+					this.roads.add(left);
+					counterRoadId++;
+					
+					newCrossroads.add(tempCrossroads[j]);
+				}
+				
+				else {
+					int length = tempCrossroads[j].getCenter().getX();
+					
+					//left Road.
+					Road left = new Road(counterRoadId, "both", length);
+					
+					//Road points.
+					List<Point> roadPoints = new ArrayList<Point>();
+					for(int k = 1; k <= length; k++){
+						Point p = new Point(tempCrossroads[j].getCenter().getX() - k,
+											tempCrossroads[j].getCenter().getY());
+						roadPoints.add(p);
+					}
+					left.setPoints(roadPoints);
+					tempCrossroads[j].setR1(left);
+					
+					//right Road.
+					Road right = tempCrossroads[j-1].getR1();
+					
+					roadPoints = new ArrayList<Point>();
+					for(int k = 1; k <= length; k++){
+						Point p = null;
+						if( (tempCrossroads[j].getCenter().getX()+k) < this.width) {
+							p = new Point(tempCrossroads[j].getCenter().getX() + k,
+									tempCrossroads[j].getCenter().getY());
+							roadPoints.add(p);
+						}
+					}
+					right.setPoints(roadPoints);
+					tempCrossroads[j].setR3(right);
+					
+					this.roads.add(left);
+					counterRoadId++;
+					
+					newCrossroads.add(tempCrossroads[j]);
+				}
+			}
+
+			if((counterNumberDifferentWidth + tempCrossroads.length) >= crossroadsArray.length) {
+				int diff = Math.abs(counterNumberDifferentWidth - crossroadsArray.length);
+				if(diff < counterNumberDifferentWidth)
+					counterNumberDifferentWidth -= diff - 1;
+				else {
+					counterNumberDifferentWidth = crossroadsArray.length-1;
+				}
+			}
+			else {
+				counterNumberDifferentWidth += tempCrossroads.length;
+			}
+			currentHeight = crossroadsArray[counterNumberDifferentWidth].getCenter().getY();
+		}
+		this.setCrossroads(newCrossroads);
+	}
+	
+	
+	/*
+	 * Generates all the Roads between the generated Crossroads.
+	 */
+	private void generateAllRoads() {
+		this.generateRoadsLeftAndRight();
 	}
 	
 	
@@ -290,7 +554,7 @@ public class CityMap {
 	 * generates random values for the attributes of the CityMap
 	 * object.
 	 */
-	public CityMap() {
+	public CityMap(int minWidth, int maxWidth, int minHeight, int maxHeight) {
 		//generates a random id for the CityMap object, between 1 and 100.
 		Random id = new Random();
 		int lower = 1;
@@ -301,14 +565,14 @@ public class CityMap {
 		
 		//generates random width between 100 and 400.
 		Random width = new Random();
-		lower = 40;
-		higher = 80;
+		lower = minWidth;
+		higher = maxWidth;
 		this.width = width.nextInt(higher-lower) + lower;
 		
 		//generates random height between 100 and 400.
 		Random height = new Random();
-		lower = 40;
-		higher = 80;
+		lower = minHeight;
+		higher = maxHeight;
 		this.height = height.nextInt(higher-lower) + lower;
 		
 		//fills the points arraylist with points.
@@ -321,16 +585,21 @@ public class CityMap {
 		}
 		
 		//create the first Crossroads.
-		Crossroads firstCrossroads = new Crossroads(1, this.randomizeCrossroadsCenter());
+		Random rDistanceToKeep = new Random();
+		int distanceToKeep = rDistanceToKeep.nextInt(5-2) + 2;
+		Crossroads firstCrossroads = new Crossroads(1, 
+									this.randomizeCrossroadsCenter(distanceToKeep));
 		this.crossroads = new ArrayList<Crossroads>();
 		this.crossroads.add(firstCrossroads);
 		
 		//create the remaining necessary Crossroads.
-		Random rDistanceToKeep = new Random();
 		Random rMaxRoadLength = new Random();
-		int distanceToKeep = rDistanceToKeep.nextInt(5-2) + 2;
 		int maxRoadLength = rMaxRoadLength.nextInt(this.height/3 - 4) + 4;
 		this.createRemainingCrossroads(firstCrossroads, distanceToKeep, maxRoadLength);
+		
+		//create all the Roads.
+		this.roads = new ArrayList<Road>();
+		this.generateAllRoads();
 	}
 	
 	
@@ -338,7 +607,7 @@ public class CityMap {
 	 * Prints the CityMap in a String sequence.
 	 */
 	public void printCityMapString() {
-		String[][] cityMap = new String[this.width-1][this.height-1];
+		String[][] cityMap = new String[this.width][this.height];
 		
 		//allocates in the cityMap the housing area (that for now is all the area)
 		for(int i = 0; i < cityMap.length; i++){
@@ -354,13 +623,38 @@ public class CityMap {
 			Crossroads c = it.next();
 			x = c.getCenter().getX();
 			y = c.getCenter().getY();
+			System.out.println("Generated Crossroad with center = ("+ x + ", " + y + ")");
 			cityMap[x][y] = "c";
+			
+			Road left = c.getR1();
+			Iterator<Point> itPoints = left.getPoints().iterator();
+			while(itPoints.hasNext()){
+				Point p = itPoints.next();
+				cityMap[p.getX()][p.getY()] = "r";
+				System.out.println("\t Added Point at (" + p.getX() + ", " + p.getY() + ")");
+			}
+			
+			Road up = c.getR2();
+			
+			Road right = c.getR3();
+			itPoints = right.getPoints().iterator();
+			while(itPoints.hasNext()){
+				Point p = itPoints.next();
+				cityMap[p.getX()][p.getY()] = "r";
+				System.out.println("\t Added Point at (" + p.getX() + ", " + p.getY() + ")");
+			}
+			
+			Road down = c.getR4();
 		}
 		
 		String debugPrinter = "";
-		for(int i = 0; i < cityMap.length; i++){
-			for(int j = 0; j < cityMap[0].length; j++){
-				debugPrinter += cityMap[i][j] + " ";
+		debugPrinter += "\nNumber of columns = " + cityMap.length;
+		debugPrinter += "\nNumber of lines = " + cityMap[0].length;
+		debugPrinter += "\n";
+		
+		for(int i = 0; i < cityMap[0].length; i++){
+			for(int j = 0; j < cityMap.length; j++){
+				debugPrinter += cityMap[j][i] + " ";
 			}
 			debugPrinter += "\n";
 		}

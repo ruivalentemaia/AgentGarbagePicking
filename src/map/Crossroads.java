@@ -2,10 +2,10 @@ package map;
 
 public class Crossroads {
 	private int id;
-	private Road r1;
-	private Road r2;
-	private Road r3;
-	private Road r4;
+	private Road left;
+	private Road up;
+	private Road right;
+	private Road down;
 	private Point center;
 	
 	public int getId() {
@@ -17,35 +17,35 @@ public class Crossroads {
 	}
 
 	public Road getR1() {
-		return r1;
+		return left;
 	}
 	
 	public void setR1(Road r1) {
-		this.r1 = r1;
+		this.left = r1;
 	}
 	
 	public Road getR2() {
-		return r2;
+		return up;
 	}
 	
 	public void setR2(Road r2) {
-		this.r2 = r2;
+		this.up = r2;
 	}
 
 	public Road getR3() {
-		return r3;
+		return right;
 	}
 
 	public void setR3(Road r3) {
-		this.r3 = r3;
+		this.right = r3;
 	}
 
 	public Road getR4() {
-		return r4;
+		return down;
 	}
 
 	public void setR4(Road r4) {
-		this.r4 = r4;
+		this.down = r4;
 	}
 	
 	public Point getCenter() {
@@ -64,10 +64,10 @@ public class Crossroads {
 	 */
 	public Crossroads(Point center, Road one, Road two, Road three, Road four){
 		this.center = center;
-		this.r1 = one;
-		this.r2 = two;
-		this.r3 = three;
-		this.r4 = four;
+		this.left = one;
+		this.up = two;
+		this.right = three;
+		this.down = four;
 	}
 	
 	/*
@@ -87,9 +87,9 @@ public class Crossroads {
 		System.out.println("\n");
 		System.out.println("Crossroads " + this.id);
 		System.out.println("Roads: ");
-		r1.printInfo();
-		r2.printInfo();
-		r3.printInfo();
-		r4.printInfo();
+		left.printInfo();
+		up.printInfo();
+		right.printInfo();
+		down.printInfo();
 	}
 }
