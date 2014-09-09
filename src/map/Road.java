@@ -25,6 +25,14 @@ public class Road {
 	public void setDirection(String direction) {
 		this.direction = direction;
 	}
+	
+	public int getLength(){
+		return length;
+	}
+	
+	public void setLength(int length){
+		this.length = length;
+	}
 
 	public int getWidth() {
 		return length;

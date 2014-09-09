@@ -1,5 +1,8 @@
 package map;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -8,6 +11,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class CityMap {
 	private int id;
@@ -918,6 +935,256 @@ public class CityMap {
 			this.garbageContainers.add(gc);
 		}
 	}
+	
+	
+	/*
+	 * 
+	 * 
+	 * 
+	 * 						XML MAP FILE EXPORT/IMPORT
+	 * 
+	 * 
+	 * 
+	 * 
+	 */
+	
+	
+	/*
+	 * Exports the current map to an XML file.
+	 * Structure:
+	 * <map>
+	 * 	<id></id>
+	 * 	<name></name>
+	 * 	<width></width>
+	 * 	<height></height>
+	 * 	<crossroads>
+	 * 		<crossroad>
+	 * 			<id></id>
+	 * 			<center x="" y="">
+	 * 			<roadLeft>
+	 * 				<id></id>
+	 * 				<direction></direction>
+	 * 				<length></length>
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 * 			</roadLeft>
+	 * 			<roadUp>
+	 * 				<id></id>
+	 * 				<direction></direction>
+	 * 				<length></length>
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 * 			</roadUp>
+	 * 			<roadRight>
+	 * 				<id></id>
+	 * 				<direction></direction>
+	 * 				<length></length>
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 * 			</roadRight>
+	 * 			<roadDown>
+	 * 				<id></id>
+	 * 				<direction></direction>
+	 * 				<length></length>
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 * 				<point x="" y="">
+	 *			</roadDown>
+	 *		</crossroad>
+	 *	</crossroads>
+	 *</map>
+	 */
+	public void exportMapToXML(String filename) throws ParserConfigurationException, TransformerException, IOException {
+		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+		
+		Document doc = docBuilder.newDocument();
+		Element rootElement = doc.createElement("map");
+		doc.appendChild(rootElement);
+		
+		Element id = doc.createElement("id");
+		id.appendChild(doc.createTextNode(Integer.toString(this.getId())));
+		rootElement.appendChild(id);
+		
+		Element name = doc.createElement("name");
+		name.appendChild(doc.createTextNode(this.getName()));
+		rootElement.appendChild(name);
+		
+		Element width = doc.createElement("width");
+		width.appendChild(doc.createTextNode(Integer.toString(this.getWidth())));
+		rootElement.appendChild(width);
+		
+		Element height = doc.createElement("height");
+		height.appendChild(doc.createTextNode(Integer.toString(this.getHeight())));
+		rootElement.appendChild(height);
+		
+		Element crossroadsSet = doc.createElement("crossroads");
+		
+		Iterator<Crossroads> itCrossroads = this.crossroads.iterator();
+		while(itCrossroads.hasNext()) {
+			Crossroads c = itCrossroads.next();
+			Element crossroads = doc.createElement("crossroad");
+			
+			//Crossroads - id
+			Element crossId = doc.createElement("id");
+			crossId.appendChild(doc.createTextNode(Integer.toString(c.getId())));
+			crossroads.appendChild(crossId);
+			
+			//Crossroads - center.
+			Element center = doc.createElement("center");
+			Attr xCenter = doc.createAttribute("x");
+			xCenter.setValue(Integer.toString(c.getCenter().getX()));
+			Attr yCenter = doc.createAttribute("y");
+			yCenter.setValue(Integer.toString(c.getCenter().getY()));
+			center.setAttributeNode(xCenter);
+			center.setAttributeNode(yCenter);
+			crossroads.appendChild(center);
+			
+			//Crossroads - road left.
+			Element left = doc.createElement("roadLeft");
+			Element leftId = doc.createElement("id");
+			leftId.appendChild(doc.createTextNode(Integer.toString(c.getR1().getId())));
+			left.appendChild(leftId);
+			Element leftDir = doc.createElement("direction");
+			leftDir.appendChild(doc.createTextNode(c.getR1().getDirection()));
+			left.appendChild(leftDir);
+			Element leftLength = doc.createElement("length");
+			leftLength.appendChild(doc.createTextNode(Integer.toString(c.getR1().getLength())));
+			left.appendChild(leftLength);
+			Element leftPointsTag = doc.createElement("points");
+			
+			Iterator<Point> leftPoints = c.getR1().getPoints().iterator();
+			while(leftPoints.hasNext()){
+				Point p = leftPoints.next();
+				Element point = doc.createElement("point");
+				Attr xP = doc.createAttribute("x");
+				xP.setValue(Integer.toString(p.getX()));
+				point.setAttributeNode(xP);
+				Attr yP = doc.createAttribute("y");
+				yP.setValue(Integer.toString(p.getY()));
+				point.setAttributeNode(yP);
+				leftPointsTag.appendChild(point);
+				left.appendChild(leftPointsTag);
+			}
+			crossroads.appendChild(left);
+			
+			//Crossroads - road up.
+			Element up = doc.createElement("roadUp");
+			Element upId = doc.createElement("id");
+			upId.appendChild(doc.createTextNode(Integer.toString(c.getR2().getId())));
+			up.appendChild(upId);
+			Element upDir = doc.createElement("direction");
+			upDir.appendChild(doc.createTextNode(c.getR2().getDirection()));
+			up.appendChild(upDir);
+			Element upLength = doc.createElement("length");
+			upLength.appendChild(doc.createTextNode(Integer.toString(c.getR2().getLength())));
+			up.appendChild(upLength);
+			Element upPointsTag = doc.createElement("points");
+			
+			Iterator<Point> upPoints = c.getR2().getPoints().iterator();
+			while(upPoints.hasNext()){
+				Point p = upPoints.next();
+				Element point = doc.createElement("point");
+				Attr xP = doc.createAttribute("x");
+				xP.setValue(Integer.toString(p.getX()));
+				point.setAttributeNode(xP);
+				Attr yP = doc.createAttribute("y");
+				yP.setValue(Integer.toString(p.getY()));
+				point.setAttributeNode(yP);
+				upPointsTag.appendChild(point);
+				up.appendChild(upPointsTag);
+			}
+			crossroads.appendChild(up);
+			
+			//Crossroads - road right.
+			Element right = doc.createElement("roadRight");
+			Element rightId = doc.createElement("id");
+			rightId.appendChild(doc.createTextNode(Integer.toString(c.getR3().getId())));
+			right.appendChild(rightId);
+			Element rightDir = doc.createElement("direction");
+			rightDir.appendChild(doc.createTextNode(c.getR3().getDirection()));
+			right.appendChild(rightDir);
+			Element rightLength = doc.createElement("length");
+			rightLength.appendChild(doc.createTextNode(Integer.toString(c.getR3().getLength())));
+			right.appendChild(rightLength);
+			Element rightPointsTag = doc.createElement("points");
+			
+			Iterator<Point> rightPoints = c.getR3().getPoints().iterator();
+			while(rightPoints.hasNext()){
+				Point p = rightPoints.next();
+				Element point = doc.createElement("point");
+				Attr xP = doc.createAttribute("x");
+				xP.setValue(Integer.toString(p.getX()));
+				point.setAttributeNode(xP);
+				Attr yP = doc.createAttribute("y");
+				yP.setValue(Integer.toString(p.getY()));
+				point.setAttributeNode(yP);
+				rightPointsTag.appendChild(point);
+				right.appendChild(rightPointsTag);
+			}
+			crossroads.appendChild(right);
+			
+			//Crossroads - road down.
+			Element down = doc.createElement("roadDown");
+			Element downId = doc.createElement("id");
+			downId.appendChild(doc.createTextNode(Integer.toString(c.getR4().getId())));
+			down.appendChild(downId);
+			Element downDir = doc.createElement("direction");
+			downDir.appendChild(doc.createTextNode(c.getR4().getDirection()));
+			down.appendChild(downDir);
+			Element downLength = doc.createElement("length");
+			downLength.appendChild(doc.createTextNode(Integer.toString(c.getR4().getLength())));
+			down.appendChild(downLength);
+			Element downPointsTag = doc.createElement("points");
+			
+			Iterator<Point> downPoints = c.getR4().getPoints().iterator();
+			while(downPoints.hasNext()){
+				Point p = downPoints.next();
+				Element point = doc.createElement("point");
+				Attr xP = doc.createAttribute("x");
+				xP.setValue(Integer.toString(p.getX()));
+				point.setAttributeNode(xP);
+				Attr yP = doc.createAttribute("y");
+				yP.setValue(Integer.toString(p.getY()));
+				point.setAttributeNode(yP);
+				downPointsTag.appendChild(point);
+				down.appendChild(downPointsTag);
+			}
+			crossroads.appendChild(down);
+			
+			crossroadsSet.appendChild(crossroads);
+		}
+		rootElement.appendChild(crossroadsSet);
+		
+		File f = new File(System.getProperty("user.dir") + "/maps");
+		f.setExecutable(true);
+		f.setReadable(true);
+		f.setWritable(true);
+		File file = new File(f.toString() + "/" + filename);
+		
+		
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		DOMSource source = new DOMSource(doc);
+		StreamResult result = new StreamResult(file);
+		
+		transformer.transform(source, result);
+		 
+		System.out.println("File exported successfully!");
+		
+	}
+	
+	
+	/*
+	 * Constructs CityMap from information in an XML file.
+	 */
+	public CityMap(String filename){
+		
+	}
+	
 	
 	/*
 	 * This constructor does not take any parameters, hence it
