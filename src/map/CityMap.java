@@ -3,6 +3,7 @@ package map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -191,6 +192,19 @@ public class CityMap {
 	}
 	
 	
+	/*
+	 * Removes the duplicates from the Crossroads ArrayList.
+	 */
+	private void removeCrossroadsDuplicates() {
+		ArrayList<Crossroads> newCrossroads = new ArrayList<Crossroads>();
+		HashSet<Crossroads> hs = new HashSet<Crossroads>();
+		hs.addAll(this.crossroads);
+		newCrossroads.addAll(hs);
+		this.crossroads.clear();
+		this.crossroads.addAll(newCrossroads);
+	}
+	
+	
 	
 	/*
 	 * 
@@ -346,8 +360,6 @@ public class CityMap {
 		 */
 		crossroadsCounter += this.generateCrossroadsRight(tempCrossroads, distanceToKeep, minRoadLength);
 		crossroadsCounter += this.generateCrossroadsLeft(tempCrossroads, distanceToKeep, minRoadLength);
-		
-		System.out.println("\nNumber of Crossroads created = " + crossroadsCounter);
 	}
 	
 	
@@ -622,29 +634,34 @@ public class CityMap {
 	 * previously generated Crossroads.
 	 */
 	private void generateRoadsUpAndDown() {
-		List<Crossroads> newCrossroads = this.crossroads;
+		this.removeCrossroadsDuplicates();
 		Crossroads[] crossroadsArray = this.convertArrayListCrossroadsToArray(this.crossroads);
 		this.orderCrossroadsHeightDesc(crossroadsArray);
 		
 		int currentHeight = crossroadsArray[0].getCenter().getY();
 		int currentWidth = crossroadsArray[0].getCenter().getX();
-		int counterNumberDifferentWidth = this.retrieveCrossroadsWithSameWidth(crossroadsArray, currentWidth).length;
-		int counterNumberDifferentHeight = this.retrieveCrossroadsWithSameHeight(crossroadsArray, currentHeight).length;
+		
+		int counterNumberDifferentHeight = this.retrieveCrossroadsWithSameWidth(crossroadsArray, currentWidth).length;
+		int counterNumberDifferentWidth = this.retrieveCrossroadsWithSameHeight(crossroadsArray, currentHeight).length;
+		
 		int counterRoadId = this.retrieveRoadHighestId().getId() + 1;
+		int index = 0;
 		
 		for(int i = 0; i < counterNumberDifferentWidth; i++){
 			
-			Crossroads[] tempCrossroads = this.retrieveCrossroadsWithSameHeight
-					(crossroadsArray, currentHeight);
-			currentHeight = crossroadsArray[counterNumberDifferentHeight].getCenter().getY();
+			Crossroads[] tempCrossroads = this.retrieveCrossroadsWithSameWidth
+					(crossroadsArray, currentWidth);
+			currentWidth = crossroadsArray[index].getCenter().getX();
 			this.convertArrayCrossroadsToArrayList(crossroadsArray);
 			
 			for(int j = 0; j < tempCrossroads.length; j++) {
+				
+				//element with the highest height.
 				if(j == 0) {
 					int length = (tempCrossroads[j].getCenter().getY() - 
-								 tempCrossroads[j+1].getCenter().getY()) - 1;
+							 tempCrossroads[j+1].getCenter().getY()) - 1;
 					
-					//left Road.
+					//Up Road.
 					Road up = new Road(counterRoadId, "both", length);
 					
 					//Road points
@@ -660,11 +677,10 @@ public class CityMap {
 					
 					up.setPoints(roadPoints);
 					tempCrossroads[j].setR2(up);
-					
 					this.roads.add(up);
 					counterRoadId++;
 					
-					//right Road.
+					//Down Road.
 					length = (this.height - tempCrossroads[j].getCenter().getY()) - 1;
 					Road down = new Road(counterRoadId, "both", length);
 					
@@ -682,19 +698,17 @@ public class CityMap {
 					}
 					down.setPoints(roadPoints);
 					tempCrossroads[j].setR4(down);
-					
 					this.roads.add(down);
 					counterRoadId++;
-					
-					newCrossroads.add(tempCrossroads[j]);
 				}
 				
-				else if((j != 0) && (j != tempCrossroads.length - 1)){
+				//elements in the middle.
+				else if ( (j != 0) && (j != tempCrossroads.length - 1)) {
 					
 					int length = (tempCrossroads[j].getCenter().getY() - 
-							 	 tempCrossroads[j+1].getCenter().getY()) - 1;
-					
-					//left Road.
+						 	 tempCrossroads[j+1].getCenter().getY()) - 1;
+				
+					//Up Road.
 					Road up = new Road(counterRoadId, "both", length);
 					
 					//Road points
@@ -711,7 +725,7 @@ public class CityMap {
 					up.setPoints(roadPoints);
 					tempCrossroads[j].setR2(up);
 					
-					//right Road.
+					//Down Road.
 					Road down = tempCrossroads[j-1].getR2();
 					
 					roadPoints = new ArrayList<Point>();
@@ -732,14 +746,13 @@ public class CityMap {
 					
 					this.roads.add(down);
 					counterRoadId++;
-					
-					newCrossroads.add(tempCrossroads[j]);
 				}
 				
+				//element with the lowest height.
 				else {
 					int length = tempCrossroads[j].getCenter().getY();
 					
-					//left Road.
+					//Up Road.
 					Road up = new Road(counterRoadId, "both", length);
 					List<Point> roadPoints = new ArrayList<Point>();
 					for(int k = 1; k <= length; k++){
@@ -753,14 +766,14 @@ public class CityMap {
 					up.setPoints(roadPoints);
 					tempCrossroads[j].setR2(up);
 					
-					//right Road.
+					//Down Road.
 					Road down = tempCrossroads[j-1].getR2();
 					roadPoints = new ArrayList<Point>();
 					for(int k = 1; k <= length; k++){
 						Point p = null;
 						if( (tempCrossroads[j].getCenter().getY()+k) < this.height) {
 							p = new Point(tempCrossroads[j].getCenter().getX(),
-									tempCrossroads[j].getCenter().getY() + k);
+										  tempCrossroads[j].getCenter().getY() + k);
 							if( (p.isEqual(tempCrossroads[j].getCenter())) ||
 								(p.isEqual(tempCrossroads[j-1].getCenter())))
 								continue;
@@ -772,25 +785,14 @@ public class CityMap {
 					
 					this.roads.add(down);
 					counterRoadId++;
-					
-					newCrossroads.add(tempCrossroads[j]);
 				}
 			}
-
-			if((counterNumberDifferentHeight + tempCrossroads.length) >= crossroadsArray.length) {
-				int diff = Math.abs(counterNumberDifferentHeight - crossroadsArray.length);
-				if(diff < counterNumberDifferentHeight)
-					counterNumberDifferentHeight -= diff - 1;
-				else {
-					counterNumberDifferentHeight = crossroadsArray.length-1;
-				}
-			}
-			else {
-				counterNumberDifferentHeight += tempCrossroads.length;
-			}
-			currentHeight = crossroadsArray[counterNumberDifferentHeight].getCenter().getY();
+			
+			index++;
+			currentWidth = crossroadsArray[index].getCenter().getX();
 		}
-		this.setCrossroads(newCrossroads);
+		this.setCrossroads(this.convertArrayCrossroadsToArrayList(crossroadsArray));
+		System.out.println();
 	}
 	
 	
@@ -888,6 +890,7 @@ public class CityMap {
 				System.out.println("\t Added Point at (" + p.getX() + ", " + p.getY() + ")");
 			}
 			
+			
 			Road up = c.getR2();
 			itPoints = up.getPoints().iterator();
 			while(itPoints.hasNext()){
@@ -903,6 +906,7 @@ public class CityMap {
 				cityMap[p.getX()][p.getY()] = "r";
 				System.out.println("\t Added Point at (" + p.getX() + ", " + p.getY() + ")");
 			}
+			
 			
 			Road down = c.getR4();
 			itPoints = down.getPoints().iterator();
