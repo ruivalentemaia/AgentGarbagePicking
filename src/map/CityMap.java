@@ -340,14 +340,13 @@ public class CityMap {
 	 * is fulfilled.
 	 */
 	private void createRemainingCrossroads(Crossroads first, int distanceToKeep, int maxRoadLength) {
-		int crossroadsCounter = 1;
 		Random rMinDistance = new Random();
 		List<Crossroads> tempCrossroads = new ArrayList<Crossroads>();
 		int minRoadLength = rMinDistance.nextInt( (this.height/5) - 2) + 2;
 		
 		//generates all possible Crossroads up and down first.
-		crossroadsCounter += this.generateCrossroadsUp(first, distanceToKeep, minRoadLength);
-		crossroadsCounter += this.generateCrossroadsDown(first, distanceToKeep, minRoadLength);
+		this.generateCrossroadsUp(first, distanceToKeep, minRoadLength);
+		this.generateCrossroadsDown(first, distanceToKeep, minRoadLength);
 		
 		//copies all the current Crossroads to the tempCrossroads ArrayList.
 		for(Crossroads c : this.crossroads){
@@ -358,8 +357,8 @@ public class CityMap {
 		 * generates all possible Crossroads for the right and left
 		 * for each one of the Crossroads in the tempCrossroads ArrayList.
 		 */
-		crossroadsCounter += this.generateCrossroadsRight(tempCrossroads, distanceToKeep, minRoadLength);
-		crossroadsCounter += this.generateCrossroadsLeft(tempCrossroads, distanceToKeep, minRoadLength);
+		this.generateCrossroadsRight(tempCrossroads, distanceToKeep, minRoadLength);
+		this.generateCrossroadsLeft(tempCrossroads, distanceToKeep, minRoadLength);
 	}
 	
 	
@@ -641,7 +640,6 @@ public class CityMap {
 		int currentHeight = crossroadsArray[0].getCenter().getY();
 		int currentWidth = crossroadsArray[0].getCenter().getX();
 		
-		int counterNumberDifferentHeight = this.retrieveCrossroadsWithSameWidth(crossroadsArray, currentWidth).length;
 		int counterNumberDifferentWidth = this.retrieveCrossroadsWithSameHeight(crossroadsArray, currentHeight).length;
 		
 		int counterRoadId = this.retrieveRoadHighestId().getId() + 1;
@@ -806,6 +804,122 @@ public class CityMap {
 	
 	
 	/*
+	 * 
+	 * 
+	 * 
+	 * 					GARBAGE CONTAINERS GENERATION
+	 * 
+	 * 
+	 * 
+	 */
+	
+	/*
+	 * Method to generate one Garbage Container, assigning values
+	 * randomly to all its attributes.
+	 */
+	private GarbageContainer generateGarbageContainer() {
+		int GCid = 0;
+		String GCType = "";
+		
+		if(this.garbageContainers.size() == 0){
+			GCid = 1;
+		}
+		else {
+			GCid = this.garbageContainers.size() + 1;
+		}
+		
+		Random rType = new Random();
+		int type = rType.nextInt(4-1) + 4; //there are 4 different types.
+		switch(type) {
+			//paper
+			case 1:
+				GCType = "paper";
+				break;
+			//glass
+			case 2:
+				GCType = "glass";
+				break;
+			//container
+			case 3:
+				GCType = "container";
+				break;
+			default:
+				GCType = "undifferentiated";
+				break;
+		}
+		
+		Random rMaxCapacity = new Random();
+		int GCMaxCapacity = rMaxCapacity.nextInt(400-50) + 50; //min 50 kg, max 400 kg.
+		
+		Random rCurrentOccupation = new Random();
+		int GCCurrentOccupation = rCurrentOccupation.nextInt(GCMaxCapacity - 5) + 5;
+		
+		int xPos = 0;
+		int yPos = 0;
+		
+		Random rIdRoad = new Random();
+		int roadId = rIdRoad.nextInt(this.roads.size() - 1) + 1;
+		Road chosenRoad = this.roads.get(roadId);
+		
+		//identify which is the road direction.
+		Point a = chosenRoad.getPoints().get(chosenRoad.getPoints().size() - 1);
+		Point b = chosenRoad.getPoints().get(chosenRoad.getPoints().size() - 2);
+		
+		// 0 for roads that go up or down and 1 for roads that go left or right.
+		int direction = 0;
+		if( (a.getX() == b.getX()) && (a.getY() != b.getY())) {
+			direction = 0;
+		}
+		else {
+			direction = 1;
+		}
+		
+		Random rRoadPoint = new Random();
+		int roadPoint = rRoadPoint.nextInt(chosenRoad.getPoints().size() - 1) + 1;
+		Random rSide = new Random();
+		int side = rSide.nextInt(2-1) + 1;
+		
+		Point p = chosenRoad.getPoints().get(roadPoint);
+		//road that goes up or down.
+		if(direction == 0){
+			//goes to the left.
+			if(side == 1) {
+				xPos = p.getX()-1;
+				yPos = p.getY();
+			}
+			else{
+				xPos = p.getX() + 1;
+				yPos = p.getY();
+			}
+		}
+		else {
+			if(side == 1) {
+				xPos = p.getX();
+				yPos = p.getY() - 1;
+			}
+			else {
+				xPos = p.getX();
+				yPos = p.getY() + 1;
+			}
+		}
+		
+		return new GarbageContainer(GCid, GCType, GCMaxCapacity, GCCurrentOccupation,new Point(xPos, yPos));
+	}
+	
+	
+	/*
+	 * Generate GarbageContainer objects depending on the size of the map.
+	 */
+	private void generateAllGarbageContainers() {
+		Random rNumberGC = new Random();
+		int numberGC = rNumberGC.nextInt(this.height/3 - this.height/5) + this.height/5;
+		for(int i = 0; i < numberGC; i++){
+			GarbageContainer gc = this.generateGarbageContainer();
+			this.garbageContainers.add(gc);
+		}
+	}
+	
+	/*
 	 * This constructor does not take any parameters, hence it
 	 * generates random values for the attributes of the CityMap
 	 * object.
@@ -856,6 +970,10 @@ public class CityMap {
 		//create all the Roads.
 		this.roads = new ArrayList<Road>();
 		this.generateAllRoads();
+		
+		//create GarbageContainer objects.
+		this.garbageContainers = new ArrayList<GarbageContainer>();
+		this.generateAllGarbageContainers();
 	}
 	
 	
@@ -868,7 +986,7 @@ public class CityMap {
 		//allocates in the cityMap the housing area (that for now is all the area)
 		for(int i = 0; i < cityMap.length; i++){
 			for(int j = 0; j < cityMap[0].length; j++){
-				cityMap[i][j] = "h";
+				cityMap[i][j] = "o";
 			}
 		}
 		
@@ -915,6 +1033,14 @@ public class CityMap {
 				cityMap[p.getX()][p.getY()] = "r";
 				System.out.println("\t Added Point at (" + p.getX() + ", " + p.getY() + ")");
 			}
+		}
+		
+		Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+		System.out.println("\n Garbage Containers:");
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			cityMap[gc.getPosition().getX()][gc.getPosition().getY()] = "G";
+			System.out.println("\t Added GarbageContainer at (" + gc.getPosition().getX() + ", " + gc.getPosition().getY() + ")");
 		}
 		
 		String debugPrinter = "";
