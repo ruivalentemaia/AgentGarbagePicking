@@ -25,6 +25,9 @@ import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 public class CityMap {
 	private int id;
@@ -35,6 +38,9 @@ public class CityMap {
 	private List<Road> roads;
 	private List<Crossroads> crossroads;
 	private List<GarbageContainer> garbageContainers;
+	
+	//XML file attributes
+	private String filePath = System.getProperty("user.dir") + "/maps";
 	
 	//Comparators to order Crossroads
 	static private Comparator<Crossroads> orderCrossroadsWidthDesc;
@@ -152,6 +158,14 @@ public class CityMap {
 		this.garbageContainers = garbageContainers;
 	}
 	
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+
 	/*
 	 * Orders an array of Crossroads by each Crossroads' width
 	 * in descending order (higher width first).
@@ -383,7 +397,7 @@ public class CityMap {
 	/*
 	 * 
 	 * 
-	 * 							ROADS GENERATION
+	 * 								ROADS GENERATION
 	 * 
 	 * 
 	 */
@@ -824,7 +838,7 @@ public class CityMap {
 	 * 
 	 * 
 	 * 
-	 * 					GARBAGE CONTAINERS GENERATION
+	 * 						GARBAGE CONTAINERS GENERATION
 	 * 
 	 * 
 	 * 
@@ -995,6 +1009,15 @@ public class CityMap {
 	 *			</roadDown>
 	 *		</crossroad>
 	 *	</crossroads>
+	 *	<garbagecontainers>
+	 *		<garbagecontainer>
+	 *			<id></id>
+	 *			<type></type>
+	 *			<maxCapacity></maxCapacity>
+	 *			<currentOccupation></currentOccupation>
+	 *			<position x="" y="" />
+	 *		</garbagecontainer>
+	 *	</garbagecontainers>
 	 *</map>
 	 */
 	public void exportMapToXML(String filename) throws ParserConfigurationException, TransformerException, IOException {
@@ -1159,6 +1182,44 @@ public class CityMap {
 		}
 		rootElement.appendChild(crossroadsSet);
 		
+		Element garbageContainersSet = doc.createElement("garbagecontainers");
+		Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			
+			Element garbageContainer = doc.createElement("garbagecontainer");
+			
+			Element gcId = doc.createElement("id");
+			gcId.appendChild(doc.createTextNode(Integer.toString(gc.getId())));
+			garbageContainer.appendChild(gcId);
+			
+			Element gcType = doc.createElement("type");
+			gcType.appendChild(doc.createTextNode(gc.getType()));
+			garbageContainer.appendChild(gcType);
+			
+			Element gcMaxCap = doc.createElement("maxCapacity");
+			gcMaxCap.appendChild(doc.createTextNode(Double.toString(gc.getMaxCapacity())));
+			garbageContainer.appendChild(gcMaxCap);
+			
+			Element gcCurrentOccupation = doc.createElement("currentOccupation");
+			gcCurrentOccupation.appendChild(doc.createTextNode(Double.toString(gc.getCurrentOccupation())));
+			garbageContainer.appendChild(gcCurrentOccupation);
+			
+			Element gcPosition = doc.createElement("position");
+			Attr xP = doc.createAttribute("x");
+			xP.setValue(Integer.toString(gc.getPosition().getX()));
+			gcPosition.setAttributeNode(xP);
+			
+			Attr yP = doc.createAttribute("y");
+			yP.setValue(Integer.toString(gc.getPosition().getY()));
+			gcPosition.setAttributeNode(yP);
+			
+			garbageContainer.appendChild(gcPosition);
+			
+			garbageContainersSet.appendChild(garbageContainer);
+		}
+		rootElement.appendChild(garbageContainersSet);
+		
 		File f = new File(System.getProperty("user.dir") + "/maps");
 		f.setExecutable(true);
 		f.setReadable(true);
@@ -1181,10 +1242,207 @@ public class CityMap {
 	/*
 	 * Constructs CityMap from information in an XML file.
 	 */
-	public CityMap(String filename){
+	public CityMap(String filename) throws ParserConfigurationException, SAXException, IOException{
+		this.crossroads = new ArrayList<Crossroads>();
+		this.roads = new ArrayList<Road>();
+		this.garbageContainers = new ArrayList<GarbageContainer>();
+		
+		File fXmlFile = new File(this.filePath + "/" + filename);
+		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+		Document doc = dBuilder.parse(fXmlFile);
+		
+		doc.getDocumentElement().normalize();
+		
+		System.out.println(doc.getDocumentElement().getNodeName());
+		
+		Element id = (Element) doc.getElementsByTagName("id");
+		this.id = Integer.parseInt(id.toString());
+		
+		Element name = (Element) doc.getElementsByTagName("name");
+		this.name = name.toString();
+		
+		Element width = (Element) doc.getElementsByTagName("width");
+		this.width = Integer.parseInt(width.toString());
+		
+		Element height = (Element) doc.getElementsByTagName("height");
+		this.height = Integer.parseInt(height.toString());
+		
+		NodeList nList = doc.getElementsByTagName("crossroads");
+		
+		for(int temp = 0; temp < nList.getLength(); temp++){
+			Node nNode = nList.item(temp);
+			
+			if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+				
+				Element eElement = (Element) nNode;
+				
+				Element crossroadsId = (Element) eElement.getElementsByTagName("id");
+				Element crossroadsCenter = (Element) eElement.getElementsByTagName("center");
+				String centerX = crossroadsCenter.getAttribute("x");
+				String centerY = crossroadsCenter.getAttribute("y");
+				
+				Crossroads c = new Crossroads(Integer.parseInt(crossroadsId.toString()), 
+											  new Point(Integer.parseInt(centerX), 
+													  	Integer.parseInt(centerY)));
+				
+				/*
+				 * Left Road for the Crossroads c.
+				 */
+				Element roadLeft = (Element) eElement.getElementsByTagName("roadLeft");
+				NodeList roadLeftList = roadLeft.getChildNodes();
+				Element roadLeftId = (Element) roadLeftList.item(0);
+				Element roadLeftDir = (Element) roadLeftList.item(1);
+				Element roadLeftLength = (Element) roadLeftList.item(2);
+				
+				Road left = new Road(Integer.parseInt(roadLeftId.toString()),
+									 roadLeftDir.toString(),
+									 Integer.parseInt(roadLeftLength.toString()));
+				
+				List<Point> leftRoadPoints = new ArrayList<Point>();
+				
+				for(int i = 3; i < roadLeftList.getLength(); i++){
+					Node pNode = roadLeftList.item(i);
+					
+					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
+						Element point = (Element) pNode;
+						int x = Integer.parseInt(point.getAttribute("x").toString());
+						int y = Integer.parseInt(point.getAttribute("y").toString());
+						
+						Point p = new Point(x,y);
+						leftRoadPoints.add(p);
+					}
+				}
+				
+				left.setPoints(leftRoadPoints);
+				c.setR1(left);
+				this.roads.add(left);
+				
+				
+				/*
+				 * Up Road for the Crossroads c.
+				 */
+				Element roadUp = (Element) eElement.getElementsByTagName("roadUp");
+				NodeList roadUpList = roadUp.getChildNodes();
+				Element roadUpId = (Element) roadUpList.item(0);
+				Element roadUpDir = (Element) roadUpList.item(1);
+				Element roadUpLength = (Element) roadUpList.item(2);
+				
+				Road up = new Road(Integer.parseInt(roadUpId.toString()),
+									 roadUpDir.toString(),
+									 Integer.parseInt(roadUpLength.toString()));
+				
+				List<Point> upRoadPoints = new ArrayList<Point>();
+				
+				for(int i = 3; i < roadUpList.getLength(); i++){
+					Node pNode = roadUpList.item(i);
+					
+					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
+						Element point = (Element) pNode;
+						int x = Integer.parseInt(point.getAttribute("x").toString());
+						int y = Integer.parseInt(point.getAttribute("y").toString());
+						
+						Point p = new Point(x,y);
+						upRoadPoints.add(p);
+					}
+				}
+				
+				up.setPoints(upRoadPoints);
+				c.setR2(up);
+				this.roads.add(up);
+				
+				
+				/*
+				 * Right Road for the Crossroads c.
+				 */
+				Element roadRight = (Element) eElement.getElementsByTagName("roadRight");
+				NodeList roadRightList = roadRight.getChildNodes();
+				Element roadRightId = (Element) roadRightList.item(0);
+				Element roadRightDir = (Element) roadRightList.item(1);
+				Element roadRightLength = (Element) roadRightList.item(2);
+				
+				Road right = new Road(Integer.parseInt(roadRightId.toString()),
+									 roadRightDir.toString(),
+									 Integer.parseInt(roadRightLength.toString()));
+				
+				List<Point> rightRoadPoints = new ArrayList<Point>();
+				
+				for(int i = 3; i < roadRightList.getLength(); i++){
+					Node pNode = roadRightList.item(i);
+					
+					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
+						Element point = (Element) pNode;
+						int x = Integer.parseInt(point.getAttribute("x").toString());
+						int y = Integer.parseInt(point.getAttribute("y").toString());
+						
+						Point p = new Point(x,y);
+						rightRoadPoints.add(p);
+					}
+				}
+				
+				right.setPoints(rightRoadPoints);
+				c.setR3(right);
+				this.roads.add(right);
+				
+				
+				/*
+				 * Down Road for the Crossroads c.
+				 */
+				Element roadDown = (Element) eElement.getElementsByTagName("roadDown");
+				NodeList roadDownList = roadDown.getChildNodes();
+				Element roadDownId = (Element) roadDownList.item(0);
+				Element roadDownDir = (Element) roadDownList.item(1);
+				Element roadDownLength = (Element) roadDownList.item(2);
+				
+				Road down = new Road(Integer.parseInt(roadDownId.toString()),
+									 roadDownDir.toString(),
+									 Integer.parseInt(roadDownLength.toString()));
+				
+				List<Point> downRoadPoints = new ArrayList<Point>();
+				
+				for(int i = 3; i < roadDownList.getLength(); i++){
+					Node pNode = roadDownList.item(i);
+					
+					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
+						Element point = (Element) pNode;
+						int x = Integer.parseInt(point.getAttribute("x").toString());
+						int y = Integer.parseInt(point.getAttribute("y").toString());
+						
+						Point p = new Point(x,y);
+						downRoadPoints.add(p);
+					}
+				}
+				
+				down.setPoints(downRoadPoints);
+				c.setR4(down);
+				this.roads.add(down);
+				
+				this.crossroads.add(c);
+			}
+		}
+		
+		/*
+		 * Garbage Containers.
+		 */
+		
 		
 	}
 	
+	
+	
+	/*
+	 * 
+	 *
+	 * 
+	 * 							RANDOM CITYMAP CONSTRUCTOR
+	 * 										AND
+	 * 							CITYMAP INFORMATION PRINTING
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 */
 	
 	/*
 	 * This constructor does not take any parameters, hence it
