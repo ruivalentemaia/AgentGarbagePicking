@@ -25,6 +25,7 @@ import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -1243,6 +1244,7 @@ public class CityMap {
 	 * Constructs CityMap from information in an XML file.
 	 */
 	public CityMap(String filename) throws ParserConfigurationException, SAXException, IOException{
+		
 		this.crossroads = new ArrayList<Crossroads>();
 		this.roads = new ArrayList<Road>();
 		this.garbageContainers = new ArrayList<GarbageContainer>();
@@ -1256,19 +1258,35 @@ public class CityMap {
 		
 		System.out.println(doc.getDocumentElement().getNodeName());
 		
-		Element id = (Element) doc.getElementsByTagName("id");
-		this.id = Integer.parseInt(id.toString());
+		String id = doc.getElementsByTagName("id").item(0).getTextContent();
+		System.out.println("Map Id = " + id);
 		
-		Element name = (Element) doc.getElementsByTagName("name");
-		this.name = name.toString();
+		if(!id.equals(null))
+			this.id = Integer.parseInt(id.toString());
+		else return;
 		
-		Element width = (Element) doc.getElementsByTagName("width");
-		this.width = Integer.parseInt(width.toString());
+		String name = doc.getElementsByTagName("name").item(0).getTextContent();
+		System.out.println("Map name = " + name);
 		
-		Element height = (Element) doc.getElementsByTagName("height");
-		this.height = Integer.parseInt(height.toString());
+		if(!name.equals(null))
+			this.name = name;
+		else return;
 		
-		NodeList nList = doc.getElementsByTagName("crossroads");
+		String width = doc.getElementsByTagName("width").item(0).getTextContent();
+		System.out.println("Map width = " + width);
+		
+		if(!width.equals(null))
+			this.width = Integer.parseInt(width.toString());
+		else return;
+		
+		String height = doc.getElementsByTagName("height").item(0).getTextContent();
+		System.out.println("Map height = " + height);
+		
+		if(!height.equals(null))
+			this.height = Integer.parseInt(height.toString());
+		else return;
+		
+		NodeList nList = doc.getElementsByTagName("crossroad");
 		
 		for(int temp = 0; temp < nList.getLength(); temp++){
 			Node nNode = nList.item(temp);
@@ -1277,10 +1295,17 @@ public class CityMap {
 				
 				Element eElement = (Element) nNode;
 				
-				Element crossroadsId = (Element) eElement.getElementsByTagName("id");
-				Element crossroadsCenter = (Element) eElement.getElementsByTagName("center");
+				String crossroadsId = eElement.getElementsByTagName("id").item(0).getTextContent();
+				System.out.println("\t Crossroads Id = " + crossroadsId);
+				
+				if(crossroadsId.equals(null)) return;
+				
+				Element crossroadsCenter = (Element) eElement.getElementsByTagName("center").item(0);
 				String centerX = crossroadsCenter.getAttribute("x");
 				String centerY = crossroadsCenter.getAttribute("y");
+				System.out.println("\t Center (" + centerX + ", " + centerY + ")");
+				
+				if( (centerX.equals(null)) || (centerY.equals(null))) return;
 				
 				Crossroads c = new Crossroads(Integer.parseInt(crossroadsId.toString()), 
 											  new Point(Integer.parseInt(centerX), 
@@ -1289,11 +1314,18 @@ public class CityMap {
 				/*
 				 * Left Road for the Crossroads c.
 				 */
-				Element roadLeft = (Element) eElement.getElementsByTagName("roadLeft");
+				Element roadLeft = (Element) eElement.getElementsByTagName("roadLeft").item(0);
+				System.out.println("\t Road Left: ");
+				
 				NodeList roadLeftList = roadLeft.getChildNodes();
-				Element roadLeftId = (Element) roadLeftList.item(0);
-				Element roadLeftDir = (Element) roadLeftList.item(1);
-				Element roadLeftLength = (Element) roadLeftList.item(2);
+				String roadLeftId = roadLeftList.item(0).getTextContent();
+				System.out.println("\t \t Id = " + roadLeftId);
+				
+				String roadLeftDir = roadLeftList.item(1).getTextContent();
+				System.out.println("\t \t Direction = " + roadLeftDir);
+				
+				String roadLeftLength = roadLeftList.item(2).getTextContent();
+				System.out.println("\t \t Length = " + roadLeftLength);
 				
 				Road left = new Road(Integer.parseInt(roadLeftId.toString()),
 									 roadLeftDir.toString(),
@@ -1301,16 +1333,32 @@ public class CityMap {
 				
 				List<Point> leftRoadPoints = new ArrayList<Point>();
 				
-				for(int i = 3; i < roadLeftList.getLength(); i++){
+				for(int i = 0; i < roadLeftList.getLength(); i++){
 					Node pNode = roadLeftList.item(i);
 					
 					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element point = (Element) pNode;
-						int x = Integer.parseInt(point.getAttribute("x").toString());
-						int y = Integer.parseInt(point.getAttribute("y").toString());
+						Element points = (Element) pNode;
+						NodeList nl = points.getChildNodes();
 						
-						Point p = new Point(x,y);
-						leftRoadPoints.add(p);
+						for(int j = 0; j < nl.getLength(); j++){
+							Node point = nl.item(j);
+							
+							if(nl.item(j).getNodeType() == Node.ELEMENT_NODE){
+								Element pointElement = (Element) point;
+								
+								String xStr = pointElement.getAttribute("x");
+								String yStr = pointElement.getAttribute("y");
+								System.out.println("\t \t Point (" + xStr + ", " + yStr + ")");
+								
+								int x = Integer.parseInt(xStr);
+								int y = Integer.parseInt(yStr);
+								
+								Point p = new Point(x,y);
+								leftRoadPoints.add(p);
+							}
+							
+							
+						}
 					}
 				}
 				
@@ -1322,11 +1370,18 @@ public class CityMap {
 				/*
 				 * Up Road for the Crossroads c.
 				 */
-				Element roadUp = (Element) eElement.getElementsByTagName("roadUp");
+				Element roadUp = (Element) eElement.getElementsByTagName("roadUp").item(0);
+				System.out.println("\t Road Up:");
+				
 				NodeList roadUpList = roadUp.getChildNodes();
-				Element roadUpId = (Element) roadUpList.item(0);
-				Element roadUpDir = (Element) roadUpList.item(1);
-				Element roadUpLength = (Element) roadUpList.item(2);
+				String roadUpId = roadUpList.item(0).getTextContent();
+				System.out.println("\t \t Id = " + roadUpId);
+				
+				String roadUpDir = roadUpList.item(0).getTextContent();
+				System.out.println("\t \t Direction = " + roadUpDir);
+				
+				String roadUpLength = roadUpList.item(0).getTextContent();
+				System.out.println("\t \t Length = " + roadUpLength);
 				
 				Road up = new Road(Integer.parseInt(roadUpId.toString()),
 									 roadUpDir.toString(),
@@ -1334,16 +1389,30 @@ public class CityMap {
 				
 				List<Point> upRoadPoints = new ArrayList<Point>();
 				
-				for(int i = 3; i < roadUpList.getLength(); i++){
+				for(int i = 0; i < roadUpList.getLength(); i++){
 					Node pNode = roadUpList.item(i);
 					
 					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element point = (Element) pNode;
-						int x = Integer.parseInt(point.getAttribute("x").toString());
-						int y = Integer.parseInt(point.getAttribute("y").toString());
+						Element points = (Element) pNode;
+						NodeList nl = points.getChildNodes();
 						
-						Point p = new Point(x,y);
-						upRoadPoints.add(p);
+						for(int j = 0; j < nl.getLength(); j++){
+							Node point = nl.item(j);
+							
+							if(nl.item(j).getNodeType() == Node.ELEMENT_NODE){
+								Element pointElement = (Element) point;
+								
+								String xStr = pointElement.getAttribute("x");
+								String yStr = pointElement.getAttribute("y").toString();
+								System.out.println("\t \t Point (" + xStr + ", " + yStr + ")");
+								
+								int x = Integer.parseInt(xStr);
+								int y = Integer.parseInt(yStr);
+								
+								Point p = new Point(x,y);
+								upRoadPoints.add(p);
+							}
+						}
 					}
 				}
 				
@@ -1355,11 +1424,18 @@ public class CityMap {
 				/*
 				 * Right Road for the Crossroads c.
 				 */
-				Element roadRight = (Element) eElement.getElementsByTagName("roadRight");
+				Element roadRight = (Element) eElement.getElementsByTagName("roadRight").item(0);
+				System.out.println("\t Road Right: ");
+				
 				NodeList roadRightList = roadRight.getChildNodes();
-				Element roadRightId = (Element) roadRightList.item(0);
-				Element roadRightDir = (Element) roadRightList.item(1);
-				Element roadRightLength = (Element) roadRightList.item(2);
+				String roadRightId = roadRightList.item(0).getTextContent();
+				System.out.println("\t \t Id = " + roadRightId);
+				
+				String roadRightDir = roadRightList.item(0).getTextContent();
+				System.out.println("\t \t Direction = " + roadRightDir);
+				
+				String roadRightLength = roadRightList.item(0).getTextContent();
+				System.out.println("\t \t Length = " + roadRightLength);
 				
 				Road right = new Road(Integer.parseInt(roadRightId.toString()),
 									 roadRightDir.toString(),
@@ -1367,19 +1443,31 @@ public class CityMap {
 				
 				List<Point> rightRoadPoints = new ArrayList<Point>();
 				
-				for(int i = 3; i < roadRightList.getLength(); i++){
+				for(int i = 0; i < roadRightList.getLength(); i++){
 					Node pNode = roadRightList.item(i);
 					
 					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element point = (Element) pNode;
-						int x = Integer.parseInt(point.getAttribute("x").toString());
-						int y = Integer.parseInt(point.getAttribute("y").toString());
-						
-						Point p = new Point(x,y);
-						rightRoadPoints.add(p);
+						Element points = (Element) pNode;
+						NodeList nl = points.getChildNodes();
+						for(int j = 0; j < nl.getLength(); j++){
+							Node point = nl.item(j);
+							
+							if(nl.item(j).getNodeType() == Node.ELEMENT_NODE){
+								Element pointElement = (Element) point;
+								
+								String xStr = pointElement.getAttribute("x");
+								String yStr = pointElement.getAttribute("y");
+								System.out.println("\t \t Point (" + xStr + ", " + yStr + ")");
+								
+								int x = Integer.parseInt(xStr);
+								int y = Integer.parseInt(yStr);
+								
+								Point p = new Point(x,y);
+								rightRoadPoints.add(p);
+							}
+						}
 					}
 				}
-				
 				right.setPoints(rightRoadPoints);
 				c.setR3(right);
 				this.roads.add(right);
@@ -1388,11 +1476,18 @@ public class CityMap {
 				/*
 				 * Down Road for the Crossroads c.
 				 */
-				Element roadDown = (Element) eElement.getElementsByTagName("roadDown");
+				Element roadDown = (Element) eElement.getElementsByTagName("roadDown").item(0);
+				System.out.println("\t Road Down:");
+				
 				NodeList roadDownList = roadDown.getChildNodes();
-				Element roadDownId = (Element) roadDownList.item(0);
-				Element roadDownDir = (Element) roadDownList.item(1);
-				Element roadDownLength = (Element) roadDownList.item(2);
+				String roadDownId = roadDownList.item(0).getTextContent();
+				System.out.println("\t \t Id = " + roadDownId);
+				
+				String roadDownDir = roadDownList.item(0).getTextContent();
+				System.out.println("\t \t Direction = " + roadDownDir);
+				
+				String roadDownLength = roadDownList.item(0).getTextContent();
+				System.out.println("\t \t Length = " + roadDownLength);
 				
 				Road down = new Road(Integer.parseInt(roadDownId.toString()),
 									 roadDownDir.toString(),
@@ -1400,16 +1495,29 @@ public class CityMap {
 				
 				List<Point> downRoadPoints = new ArrayList<Point>();
 				
-				for(int i = 3; i < roadDownList.getLength(); i++){
+				for(int i = 0; i < roadDownList.getLength(); i++){
 					Node pNode = roadDownList.item(i);
 					
 					if (pNode.getNodeType() == Node.ELEMENT_NODE) {
-						Element point = (Element) pNode;
-						int x = Integer.parseInt(point.getAttribute("x").toString());
-						int y = Integer.parseInt(point.getAttribute("y").toString());
-						
-						Point p = new Point(x,y);
-						downRoadPoints.add(p);
+						Element points = (Element) pNode;
+						NodeList nl = points.getChildNodes();
+						for(int j = 0; j < nl.getLength(); j++){
+							Node point = nl.item(j);
+							
+							if(nl.item(j).getNodeType() == Node.ELEMENT_NODE){
+								Element pointElement = (Element) point;
+								
+								String xStr = pointElement.getAttribute("x");
+								String yStr = pointElement.getAttribute("y");
+								System.out.println("\t \t Point (" + xStr + ", " + yStr + ")");
+								
+								int x = Integer.parseInt(xStr);
+								int y = Integer.parseInt(yStr);
+								
+								Point p = new Point(x,y);
+								downRoadPoints.add(p);
+							}
+						}
 					}
 				}
 				
@@ -1424,8 +1532,44 @@ public class CityMap {
 		/*
 		 * Garbage Containers.
 		 */
+		nList = doc.getElementsByTagName("garbagecontainer");
 		
-		
+		for(int temp = 0; temp < nList.getLength(); temp++){
+			Node nNode = nList.item(temp);
+			
+			if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+				
+				System.out.println("Garbage Container: ");
+				
+				Element eElement = (Element) nNode;
+				
+				String gcId = eElement.getElementsByTagName("id").item(0).getTextContent();
+				System.out.println("\t Id = " + gcId);
+				
+				String gcType = eElement.getElementsByTagName("type").item(0).getTextContent();
+				System.out.println("\t Type = " + gcType);
+				
+				String gcMaxCapacity = eElement.getElementsByTagName("maxCapacity").item(0).getTextContent();
+				System.out.println("\t Max Capacity = " + gcMaxCapacity);
+				
+				String gcCurrentOccupation = eElement.getElementsByTagName("currentOccupation").item(0).getTextContent();
+				System.out.println("\t Current Occupation = " + gcCurrentOccupation);
+				
+				Element gcPosition = (Element) eElement.getElementsByTagName("position").item(0);
+				int x = Integer.parseInt(gcPosition.getAttribute("x").toString());
+				int y = Integer.parseInt(gcPosition.getAttribute("y").toString());
+				System.out.println("\t Position (" + x + ", " + y + ")");
+				
+				Point position = new Point(x,y);
+				
+				GarbageContainer gc = new GarbageContainer(Integer.parseInt(gcId),
+														   gcType,
+														   Double.parseDouble(gcMaxCapacity),
+														   Double.parseDouble(gcCurrentOccupation),
+														   position);
+				this.garbageContainers.add(gc);
+			}
+		}
 	}
 	
 	
