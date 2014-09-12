@@ -241,7 +241,7 @@ public class CityMap {
 	/*
 	 * 
 	 * 
-	 * 						CROSSROADS GENERATION
+	 * 		CROSSROADS GENERATION
 	 * 
 	 * 
 	 */
@@ -271,8 +271,8 @@ public class CityMap {
 		int emptySpace = currentHeight - distanceToKeep;
 		while( (emptySpace - minRoadLength - distanceToKeep) > 0) {
 			Crossroads cNew = new Crossroads(c.getId() + 1, 
-											new Point(c.getCenter().getX(), 
-													  currentHeight - minRoadLength - 1));
+									new Point(c.getCenter().getX(), 
+										currentHeight - minRoadLength - 1));
 			
 			this.crossroads.add(cNew);
 			currentHeight = cNew.getCenter().getY();
@@ -294,8 +294,8 @@ public class CityMap {
 		int emptySpace = (this.getHeight() - currentHeight) - distanceToKeep;
 		while( (emptySpace - minRoadLength-distanceToKeep) > 0) {
 			Crossroads cNew = new Crossroads(c.getId() + 1, 
-											new Point(c.getCenter().getX(), 
-													  currentHeight + minRoadLength + 1));
+								new Point(c.getCenter().getX(), 
+										currentHeight + minRoadLength + 1));
 			
 			this.crossroads.add(cNew);
 			currentHeight = cNew.getCenter().getY();
@@ -323,8 +323,8 @@ public class CityMap {
 			currentId = tempCrossroads.size();
 			while( (emptySpace - minRoadLength) > 0){
 				Crossroads cNew = new Crossroads(currentId++,
-												new Point(currentWidth + minRoadLength + 1,
-														  c.getCenter().getY()));
+									new Point(currentWidth + minRoadLength + 1,
+										c.getCenter().getY()));
 				this.crossroads.add(cNew);
 				currentWidth = cNew.getCenter().getX();
 				emptySpace = (this.getWidth() - currentWidth) - distanceToKeep;
@@ -353,8 +353,8 @@ public class CityMap {
 			currentId = tempCrossroads.size();
 			while( (emptySpace - minRoadLength) > 0){
 				Crossroads cNew = new Crossroads(currentId++,
-												new Point(currentWidth - minRoadLength - 1,
-														  c.getCenter().getY()));
+									new Point(currentWidth - minRoadLength - 1,
+										c.getCenter().getY()));
 				this.crossroads.add(cNew);
 				currentWidth = cNew.getCenter().getX();
 				emptySpace = currentWidth - distanceToKeep;
@@ -398,7 +398,7 @@ public class CityMap {
 	/*
 	 * 
 	 * 
-	 * 								ROADS GENERATION
+	 * 		ROADS GENERATION
 	 * 
 	 * 
 	 */
@@ -839,7 +839,7 @@ public class CityMap {
 	 * 
 	 * 
 	 * 
-	 * 						GARBAGE CONTAINERS GENERATION
+	 * 		GARBAGE CONTAINERS GENERATION
 	 * 
 	 * 
 	 * 
@@ -956,7 +956,7 @@ public class CityMap {
 	 * 
 	 * 
 	 * 
-	 * 						XML MAP FILE EXPORT/IMPORT
+	 * 		XML MAP FILE EXPORT/IMPORT
 	 * 
 	 * 
 	 * 
@@ -1578,9 +1578,9 @@ public class CityMap {
 	 * 
 	 *
 	 * 
-	 * 							RANDOM CITYMAP CONSTRUCTOR
-	 * 										AND
-	 * 							CITYMAP INFORMATION PRINTING
+	 * 		RANDOM CITYMAP CONSTRUCTOR
+	 * 				AND
+	 * 		CITYMAP INFORMATION PRINTING
 	 * 
 	 * 
 	 * 
