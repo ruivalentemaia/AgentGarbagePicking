@@ -247,15 +247,23 @@ public class CityMap {
 	
 	
 	/*
-	 * Removes the duplicates from the Points ArrayList.
+	 * Gets the Road to which a given Point parameter's object belongs to.
 	 */
-	private void removePointsDuplicates() {
-		ArrayList<Point> newPoints = new ArrayList<Point>();
-		HashSet<Point> hp = new HashSet<Point>();
-		hp.addAll(this.points);
-		newPoints.addAll(hp);
-		this.points.clear();
-		this.points.addAll(newPoints);
+	public Road selectRoadFromPoint(Point p){
+		Iterator<Road> itRoad = this.roads.iterator();
+		while(itRoad.hasNext()) {
+			Road r = itRoad.next();
+			List<Point> roadPoints = new ArrayList<Point>();
+			roadPoints.addAll(r.getPoints());
+			Iterator<Point> roadPointsIt = roadPoints.iterator();
+			while(roadPointsIt.hasNext()){
+				Point n = roadPointsIt.next();
+				if( (n.getX() == p.getX()) && (n.getY() == p.getY())){
+					return r;
+				}
+			}
+		}
+		return null;
 	}
 	
 	

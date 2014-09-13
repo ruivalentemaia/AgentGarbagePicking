@@ -5,7 +5,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import ai.Goal;
+import map.CityMap;
 import map.Point;
+import map.Road;
 import jade.core.Agent;
 
 public class Truck extends Agent {
@@ -20,7 +22,7 @@ public class Truck extends Agent {
 	private List<Goal> goals;
 	
 	//complete list of the CityMap points
-	private List<Point> completeCityMap;
+	private CityMap completeCityMap;
 	
 	
 	/*
@@ -105,12 +107,12 @@ public class Truck extends Agent {
 	}
 
 
-	public List<Point> getCompleteCityMap() {
+	public CityMap getCompleteCityMap() {
 		return completeCityMap;
 	}
 
 
-	public void setCompleteCityMap(List<Point> completeCityMap) {
+	public void setCompleteCityMap(CityMap completeCityMap) {
 		this.completeCityMap = completeCityMap;
 	}
 	
@@ -120,7 +122,7 @@ public class Truck extends Agent {
 	 */
 	public int getMaxX() {
 		int max = 0;
-		Iterator<Point> itMap = this.completeCityMap.iterator();
+		Iterator<Point> itMap = this.completeCityMap.getPoints().iterator();
 		while(itMap.hasNext()){
 			Point p = itMap.next();
 			if(p.getX() > max){
@@ -135,7 +137,7 @@ public class Truck extends Agent {
 	 */
 	public int getMaxY() {
 		int max = 0;
-		Iterator<Point> itMap = this.completeCityMap.iterator();
+		Iterator<Point> itMap = this.completeCityMap.getPoints().iterator();
 		while(itMap.hasNext()){
 			Point p = itMap.next();
 			if(p.getY() > max){
@@ -174,7 +176,7 @@ public class Truck extends Agent {
 			
 			//test if it's a Crossroads.
 			futurePos.setType("CROSSROADS");
-			index = this.completeCityMap.indexOf(futurePos);
+			index = this.completeCityMap.getPoints().indexOf(futurePos);
 			if(index != -1){
 				this.currentPosition = futurePos;
 				this.pathWalked.add(this.currentPosition);
@@ -182,14 +184,25 @@ public class Truck extends Agent {
 				return success;
 			}
 			
-			//test if it's a Road.
-			futurePos.setType("ROAD");
-			index = this.completeCityMap.indexOf(futurePos);
-			if(index != -1){
-				this.currentPosition = futurePos;
-				this.pathWalked.add(this.currentPosition);
-				success = 1;
-				return success;
+			/*
+			 * tests if it's a Road and tests for the directions of it
+			 * to validate the movement.
+			 */
+			Road prev = this.completeCityMap.selectRoadFromPoint(this.currentPosition);
+			Road next = this.completeCityMap.selectRoadFromPoint(futurePos);
+			try {
+				if( (prev.getDirection().equals(next.getDirection())) || (next.getDirection().equals("both"))){
+					futurePos.setType("ROAD");
+					index = this.completeCityMap.getPoints().indexOf(futurePos);
+					if(index != -1){
+						this.currentPosition = futurePos;
+						this.pathWalked.add(this.currentPosition);
+						success = 1;
+						return success;
+					}
+				}
+			} catch(NullPointerException e){
+				e.printStackTrace();
 			}
 			
 		}
@@ -212,7 +225,7 @@ public class Truck extends Agent {
 			
 			//test if it's a Crossroads.
 			futurePos.setType("CROSSROADS");
-			index = this.completeCityMap.indexOf(futurePos);
+			index = this.completeCityMap.getPoints().indexOf(futurePos);
 			if(index != -1){
 				this.currentPosition = futurePos;
 				this.pathWalked.add(this.currentPosition);
@@ -220,14 +233,25 @@ public class Truck extends Agent {
 				return success;
 			}
 			
-			//test if it's a Road.
-			futurePos.setType("ROAD");
-			index = this.completeCityMap.indexOf(futurePos);
-			if(index != -1){
-				this.currentPosition = futurePos;
-				this.pathWalked.add(this.currentPosition);
-				success = 1;
-				return success;
+			/*
+			 * tests if it's a Road and tests for the directions of it
+			 * to validate the movement.
+			 */
+			Road prev = this.completeCityMap.selectRoadFromPoint(this.currentPosition);
+			Road next = this.completeCityMap.selectRoadFromPoint(futurePos);
+			try {
+				if( (prev.getDirection().equals(next.getDirection())) || (next.getDirection().equals("both"))){
+					futurePos.setType("ROAD");
+					index = this.completeCityMap.getPoints().indexOf(futurePos);
+					if(index != -1){
+						this.currentPosition = futurePos;
+						this.pathWalked.add(this.currentPosition);
+						success = 1;
+						return success;
+					}
+				}
+			} catch(NullPointerException e){
+				e.printStackTrace();
 			}
 			
 		}
@@ -250,7 +274,7 @@ public class Truck extends Agent {
 			
 			//test if it's a Crossroads.
 			futurePos.setType("CROSSROADS");
-			index = this.completeCityMap.indexOf(futurePos);
+			index = this.completeCityMap.getPoints().indexOf(futurePos);
 			if(index != -1){
 				this.currentPosition = futurePos;
 				this.pathWalked.add(this.currentPosition);
@@ -258,14 +282,25 @@ public class Truck extends Agent {
 				return success;
 			}
 			
-			//test if it's a Road.
-			futurePos.setType("ROAD");
-			index = this.completeCityMap.indexOf(futurePos);
-			if(index != -1){
-				this.currentPosition = futurePos;
-				this.pathWalked.add(this.currentPosition);
-				success = 1;
-				return success;
+			/*
+			 * tests if it's a Road and tests for the directions of it
+			 * to validate the movement.
+			 */
+			Road prev = this.completeCityMap.selectRoadFromPoint(this.currentPosition);
+			Road next = this.completeCityMap.selectRoadFromPoint(futurePos);
+			try {
+				if( (prev.getDirection().equals(next.getDirection())) || (next.getDirection().equals("both"))){
+					futurePos.setType("ROAD");
+					index = this.completeCityMap.getPoints().indexOf(futurePos);
+					if(index != -1){
+						this.currentPosition = futurePos;
+						this.pathWalked.add(this.currentPosition);
+						success = 1;
+						return success;
+					}
+				}
+			} catch(NullPointerException e){
+				e.printStackTrace();
 			}
 			
 		}
@@ -288,7 +323,7 @@ public class Truck extends Agent {
 			
 			//test if it's a Crossroads.
 			futurePos.setType("CROSSROADS");
-			index = this.completeCityMap.indexOf(futurePos);
+			index = this.completeCityMap.getPoints().indexOf(futurePos);
 			if(index != -1){
 				this.currentPosition = futurePos;
 				this.pathWalked.add(this.currentPosition);
@@ -296,14 +331,25 @@ public class Truck extends Agent {
 				return success;
 			}
 			
-			//test if it's a Road.
-			futurePos.setType("ROAD");
-			index = this.completeCityMap.indexOf(futurePos);
-			if(index != -1){
-				this.currentPosition = futurePos;
-				this.pathWalked.add(this.currentPosition);
-				success = 1;
-				return success;
+			/*
+			 * tests if it's a Road and tests for the directions of it
+			 * to validate the movement.
+			 */
+			Road prev = this.completeCityMap.selectRoadFromPoint(this.currentPosition);
+			Road next = this.completeCityMap.selectRoadFromPoint(futurePos);
+			try {
+				if( (prev.getDirection().equals(next.getDirection())) || (next.getDirection().equals("both"))){
+					futurePos.setType("ROAD");
+					index = this.completeCityMap.getPoints().indexOf(futurePos);
+					if(index != -1){
+						this.currentPosition = futurePos;
+						this.pathWalked.add(this.currentPosition);
+						success = 1;
+						return success;
+					}
+				}
+			} catch(NullPointerException e){
+				e.printStackTrace();
 			}
 			
 		}
@@ -348,8 +394,6 @@ public class Truck extends Agent {
 		this.pathToBeWalked = new ArrayList<Point>();
 		
 		this.goals = new ArrayList<Goal>();
-		
-		this.completeCityMap = new ArrayList<Point>();
 	}
 
 }
