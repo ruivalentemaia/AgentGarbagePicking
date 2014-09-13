@@ -1,6 +1,7 @@
 package agent;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import ai.Goal;
@@ -18,11 +19,18 @@ public class Truck extends Agent {
 	private List<Point> pathToBeWalked;
 	private List<Goal> goals;
 	
+	//complete list of the CityMap points
+	private List<Point> completeCityMap;
+	
 	
 	/*
 	 *
 	 * 
+	 * 
+	 * 
 	 * 	GETS AND SETS FOR ALL THE ATTRIBUTES.
+	 * 
+	 * 
 	 * 
 	 * 
 	 */
@@ -97,6 +105,227 @@ public class Truck extends Agent {
 	}
 
 
+	public List<Point> getCompleteCityMap() {
+		return completeCityMap;
+	}
+
+
+	public void setCompleteCityMap(List<Point> completeCityMap) {
+		this.completeCityMap = completeCityMap;
+	}
+	
+	
+	/*
+	 * Gets the maximum X value in the list of map points.
+	 */
+	public int getMaxX() {
+		int max = 0;
+		Iterator<Point> itMap = this.completeCityMap.iterator();
+		while(itMap.hasNext()){
+			Point p = itMap.next();
+			if(p.getX() > max){
+				max = p.getX();
+			}
+		}
+		return max;
+	}
+	
+	/*
+	 * Gets the maximum Y value in the list of map points.
+	 */
+	public int getMaxY() {
+		int max = 0;
+		Iterator<Point> itMap = this.completeCityMap.iterator();
+		while(itMap.hasNext()){
+			Point p = itMap.next();
+			if(p.getY() > max){
+				max = p.getY();
+			}
+		}
+		return max;
+	}
+	
+	
+	
+	/*
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 	TRUCK MOVEMENTS METHODS.
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 */
+	
+	/*
+	 * This truck moves one position to the left.
+	 * Returns 1 if the movement was completed and -1 if it failed.
+	 */
+	public int moveLeft(){
+		int success = -1;
+		int index = -1;
+		
+		//if it's 0, the Truck can't move left.
+		if( (this.currentPosition.getX() > 0)) {
+			Point futurePos = new Point(this.currentPosition.getX() - 1, this.currentPosition.getY());
+			
+			//test if it's a Crossroads.
+			futurePos.setType("CROSSROADS");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+			//test if it's a Road.
+			futurePos.setType("ROAD");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+		}
+		
+		return success;
+	}
+	
+	
+	/*
+	 * This Truck moves one position to the right.
+	 * Returns 1 if the movement was completed and -1 if the movement failed.
+	 */
+	public int moveRight(){
+		int success = -1;
+		int index = -1;
+		
+		//if it's 0, the Truck can't move left.
+		if( (this.currentPosition.getX() < this.getMaxX())) {
+			Point futurePos = new Point(this.currentPosition.getX() + 1, this.currentPosition.getY());
+			
+			//test if it's a Crossroads.
+			futurePos.setType("CROSSROADS");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+			//test if it's a Road.
+			futurePos.setType("ROAD");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+		}
+		
+		return success;
+	}
+	
+	
+	/*
+	 * This Truck moves one position Up in the map.
+	 * Returns 1 if the movement was completed and -1 if it failed.
+	 */
+	public int moveUp() {
+		int success = -1;
+		int index = -1;
+		
+		//if it's 0, the Truck can't move left.
+		if( (this.currentPosition.getY() > 0)) {
+			Point futurePos = new Point(this.currentPosition.getX(), this.currentPosition.getY() - 1);
+			
+			//test if it's a Crossroads.
+			futurePos.setType("CROSSROADS");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+			//test if it's a Road.
+			futurePos.setType("ROAD");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+		}
+		
+		return success;
+	}
+	
+	
+	/*
+	 * This Truck moves one position Up in the map.
+	 * Returns 1 if the movement was completed and -1 if it failed.
+	 */
+	public int moveDown() {
+		int success = -1;
+		int index = -1;
+		
+		//if it's 0, the Truck can't move left.
+		if( (this.currentPosition.getY() < this.getMaxY())) {
+			Point futurePos = new Point(this.currentPosition.getX(), this.currentPosition.getY() + 1);
+			
+			//test if it's a Crossroads.
+			futurePos.setType("CROSSROADS");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+			//test if it's a Road.
+			futurePos.setType("ROAD");
+			index = this.completeCityMap.indexOf(futurePos);
+			if(index != -1){
+				this.currentPosition = futurePos;
+				this.pathWalked.add(this.currentPosition);
+				success = 1;
+				return success;
+			}
+			
+		}
+		
+		return success;
+	}
+	
+	
+	
+	/*
+	 * 
+	 * 
+	 * 
+	 *
+	 * 	CONSTRUCTOR.
+	 *
+	 * 
+	 * 
+	 * 
+	 */
+
+	
 	/*
 	 * Constructor with 3 arguments (ID, truckName and startingPoint).
 	 */
@@ -119,6 +348,8 @@ public class Truck extends Agent {
 		this.pathToBeWalked = new ArrayList<Point>();
 		
 		this.goals = new ArrayList<Goal>();
+		
+		this.completeCityMap = new ArrayList<Point>();
 	}
 
 }

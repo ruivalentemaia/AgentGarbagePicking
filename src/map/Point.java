@@ -3,6 +3,7 @@ package map;
 public class Point {
 	private int x;
 	private int y;
+	private String type;
 	
 	public int getX() {
 		return x;
@@ -19,6 +20,18 @@ public class Point {
 		this.y = y;
 	}
 	
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		if ( (type.equals("HOUSE")) || (type.equals("ROAD")) 
+		  || (type.equals("CROSSROADS")) || (type.equals("GARBAGE_CONTAINER")) )
+			this.type = type;
+		else this.type = "HOUSE";
+		
+	}
+
 	/*
 	 * Constructs a Point with an x and a y integers as parameters.
 	 */

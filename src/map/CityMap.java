@@ -2,21 +2,19 @@ package map;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Random;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -25,7 +23,6 @@ import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -204,6 +201,18 @@ public class CityMap {
 	
 	
 	/*
+	 * Sorts the points List by ascending x value.
+	 */
+	private void sortPointsByAscendingX(){
+		Collections.sort(this.points, new Comparator<Point>() {
+			public int compare(Point o1, Point o2) {
+				return o1.getX() - o2.getX();
+			}
+		});
+	}
+	
+	
+	/*
 	 * Converts an ArrayList of Crossroads to an array of Crossroads.
 	 */
 	private Crossroads[] convertArrayListCrossroadsToArray(List<Crossroads> crossroads) {
@@ -234,6 +243,19 @@ public class CityMap {
 		newCrossroads.addAll(hs);
 		this.crossroads.clear();
 		this.crossroads.addAll(newCrossroads);
+	}
+	
+	
+	/*
+	 * Removes the duplicates from the Points ArrayList.
+	 */
+	private void removePointsDuplicates() {
+		ArrayList<Point> newPoints = new ArrayList<Point>();
+		HashSet<Point> hp = new HashSet<Point>();
+		hp.addAll(this.points);
+		newPoints.addAll(hp);
+		this.points.clear();
+		this.points.addAll(newPoints);
 	}
 	
 	
@@ -1364,7 +1386,9 @@ public class CityMap {
 				
 				left.setPoints(leftRoadPoints);
 				c.setR1(left);
-				this.roads.add(left);
+				
+				if(!this.roads.contains(left))
+					this.roads.add(left);
 				
 				
 				/*
@@ -1418,7 +1442,9 @@ public class CityMap {
 				
 				up.setPoints(upRoadPoints);
 				c.setR2(up);
-				this.roads.add(up);
+				
+				if(!this.roads.contains(up))
+					this.roads.add(up);
 				
 				
 				/*
@@ -1470,7 +1496,9 @@ public class CityMap {
 				}
 				right.setPoints(rightRoadPoints);
 				c.setR3(right);
-				this.roads.add(right);
+				
+				if(!this.roads.contains(right))
+					this.roads.add(right);
 				
 				
 				/*
@@ -1523,7 +1551,9 @@ public class CityMap {
 				
 				down.setPoints(downRoadPoints);
 				c.setR4(down);
-				this.roads.add(down);
+				
+				if(!this.roads.contains(down))
+					this.roads.add(down);
 				
 				this.crossroads.add(c);
 			}
@@ -1570,8 +1600,86 @@ public class CityMap {
 				this.garbageContainers.add(gc);
 			}
 		}
+		
+		//allocates all points in the points ArrayList
+		this.allocatePoints();
 	}
 	
+	
+	
+	/*
+	 * 
+	 * 
+	 * 	POINT ALLOCATION.
+	 * 
+	 * 
+	 */
+	
+	/*
+	 *	Allocates all created points (in Crossroads, Roads and GarbageContainers Lists)
+	 * to the Points List. 
+	 */
+	private void allocatePoints() {
+		this.points = new ArrayList<Point>();
+		
+		System.out.println("\n");
+		System.out.println("----------------------------------------------------------------");
+		System.out.println("\t \t POINT ALLOCATION STARTING.");
+		System.out.println("\n");
+		
+		//fills the points arraylist with points.
+		for(int i = 0; i < this.width; i++) {
+			for(int j = 0; j < this.height; j++){
+				Point p = new Point(i,j);
+				boolean foundOtherType = false;
+				
+				Iterator<Crossroads> itCrossroads = this.crossroads.iterator();
+				while(itCrossroads.hasNext()){
+					Crossroads c = itCrossroads.next();
+					if( (i == c.getCenter().getX()) && (j == c.getCenter().getY())){
+						p.setType("CROSSROADS");
+						foundOtherType = true;
+						break;
+					}
+				}
+				
+				Iterator<Road> itRoad = this.roads.iterator();
+				while(itRoad.hasNext()) {
+					Road r = itRoad.next();
+					List<Point> roadPoints = new ArrayList<Point>();
+					roadPoints.addAll(r.getPoints());
+					
+					Iterator<Point> roadPointsIt = roadPoints.iterator();
+					while(roadPointsIt.hasNext()) {
+						Point roadPoint = roadPointsIt.next();
+						if( (i == roadPoint.getX()) && (j == roadPoint.getY())){
+							p.setType("ROAD");
+							foundOtherType = true;
+							break;
+						}
+					}
+				}
+				
+				Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+				while(itGC.hasNext()){
+					GarbageContainer gc = itGC.next();
+					if( (i == gc.getPosition().getX()) && (j == gc.getPosition().getY())){
+						p.setType("GARBAGE_CONTAINER");
+						foundOtherType = true;
+						break;
+					}
+				}
+				
+				if(!foundOtherType)
+					p.setType("HOUSE");
+				this.points.add(p);
+				System.out.println("Allocated (" + p.getX() + ", " + p.getY() + ") = " + p.getType());
+			}
+		}
+		
+		this.sortPointsByAscendingX();
+		System.out.println();
+	}
 	
 	
 	/*
@@ -1614,15 +1722,6 @@ public class CityMap {
 		higher = maxHeight;
 		this.height = height.nextInt(higher-lower) + lower;
 		
-		//fills the points arraylist with points.
-		this.points = new ArrayList<Point>();
-		for(int i = 1; i <= this.width; i++) {
-			for(int j = 1; j <= this.height; j++){
-				Point p = new Point(i,j);
-				this.points.add(p);
-			}
-		}
-		
 		//create the first Crossroads.
 		Random rDistanceToKeep = new Random();
 		int distanceToKeep = rDistanceToKeep.nextInt(5-2) + 2;
@@ -1643,6 +1742,9 @@ public class CityMap {
 		//create GarbageContainer objects.
 		this.garbageContainers = new ArrayList<GarbageContainer>();
 		this.generateAllGarbageContainers();
+		
+		//allocates all points in the points ArrayList
+		this.allocatePoints();
 	}
 	
 	
