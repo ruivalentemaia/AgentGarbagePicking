@@ -59,7 +59,16 @@ public class Goal {
 	public void setBestPath(Path bestPath) {
 		this.bestPath = bestPath;
 	}
-
+	
+	
+	/*
+	 * Calculates Euclidean distance between two points passed as parameter.
+	 */
+	public double euclideanDistance(Point start, Point destination){
+		double h = Math.sqrt(Math.pow((start.getX() - destination.getX()), 2) + Math.pow(start.getY()-destination.getY(), 2));
+		return h;
+	}
+	
 
 	/*
 	 * Constructor for the Goal object with 3 parameters (corresponding to

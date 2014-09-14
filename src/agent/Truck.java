@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import ai.AStar;
 import ai.Goal;
 import map.CityMap;
+import map.GarbageContainer;
 import map.Point;
 import map.Road;
 import jade.core.Agent;
@@ -15,11 +17,15 @@ public class Truck extends Agent {
 	
 	private int id;
 	private String truckName;
+	private String garbageType;
 	private Point startPosition;
 	private Point currentPosition;
+	private double currentOccupation;
+	private double maxCapacity;
 	private List<Point> pathWalked;
 	private List<Point> pathToBeWalked;
 	private List<Goal> goals;
+	private List<GarbageContainer> garbageContainersToGoTo;
 	
 	//complete list of the CityMap points
 	private CityMap completeCityMap;
@@ -57,6 +63,16 @@ public class Truck extends Agent {
 	}
 
 
+	public String getGarbageType() {
+		return garbageType;
+	}
+
+
+	public void setGarbageType(String garbageType) {
+		this.garbageType = garbageType;
+	}
+
+
 	public Point getStartPosition() {
 		return startPosition;
 	}
@@ -64,6 +80,26 @@ public class Truck extends Agent {
 
 	public void setStartPosition(Point startPosition) {
 		this.startPosition = startPosition;
+	}
+
+
+	public double getCurrentOccupation() {
+		return currentOccupation;
+	}
+
+
+	public void setCurrentOccupation(double currentOccupation) {
+		this.currentOccupation = currentOccupation;
+	}
+
+
+	public double getMaxCapacity() {
+		return maxCapacity;
+	}
+
+
+	public void setMaxCapacity(double maxCapacity) {
+		this.maxCapacity = maxCapacity;
 	}
 
 
@@ -104,6 +140,16 @@ public class Truck extends Agent {
 
 	public void setGoals(List<Goal> goals) {
 		this.goals = goals;
+	}
+
+
+	public List<GarbageContainer> getGarbageContainersToGoTo() {
+		return garbageContainersToGoTo;
+	}
+
+
+	public void setGarbageContainersToGoTo(List<GarbageContainer> garbageContainersToGoTo) {
+		this.garbageContainersToGoTo = garbageContainersToGoTo;
 	}
 
 
@@ -363,6 +409,76 @@ public class Truck extends Agent {
 	 * 
 	 * 
 	 * 
+	 * 	PATH PLANNING.
+	 * 
+	 * 
+	 * 
+	 */
+	
+	
+	/*
+	 * Fills the list of Goals with new Goals where the type of the garbage
+	 * in the GarbageContainer used is the same as the type of garbage that this
+	 * Truck can transport.
+	 */
+	private void buildGoalsList() {
+		Iterator<GarbageContainer> gcIt = this.completeCityMap.getGarbageContainers().iterator();
+		int goalCounter = 1;
+		while(gcIt.hasNext()){
+			GarbageContainer gc = gcIt.next();
+			if(gc.getType().equals(this.getGarbageType())){
+				Point gcPos = gc.getPosition();
+				Road r = this.completeCityMap.selectRoadFromGarbageContainer(gcPos);
+				Point finalPos = this.completeCityMap.selectPointFromRoad(r, gcPos);
+				Goal g = new Goal(goalCounter, this.startPosition, finalPos);
+				this.goals.add(g);
+				goalCounter++;
+				this.garbageContainersToGoTo.add(gc);
+			}
+		}
+	}
+	
+	
+	/*
+	 * Checks if the current position is the same as the final position
+	 * of a parameter passed Goal.
+	 */
+	private boolean currentPosEqualToFinalPos(Goal g){
+		if( (this.currentPosition.getX() == g.getEndPoint().getX()) && (this.currentPosition.getY() == g.getEndPoint().getY())) {
+			return true;
+		}
+		else return false;
+	}
+	
+	
+	/*
+	 * 
+	 */
+	public void doAStar(){
+		this.buildGoalsList();
+		AStar astar = new AStar(this.goals.get(1));
+		
+		while( !this.currentPosEqualToFinalPos(this.goals.get(1))) {
+			astar.calculateFHeuristicForOpenList();
+			Point bestNode = astar.minimumFHeuristic();
+			if( (bestNode.getX() == astar.getGoal().getEndPoint().getX()) &&
+				(bestNode.getY() == astar.getGoal().getEndPoint().getY()) ) {
+				break;
+			}
+			else {
+				astar.getClosedList().add(bestNode);
+				List<Point> neighbours = new ArrayList<Point>();
+				//TODO: method to calculate neighbours of a given Point.
+			}
+		}
+	}
+	
+	
+	
+	/*
+	 * 
+	 * 
+	 * 
 	 *
 	 * 	CONSTRUCTOR.
 	 *
@@ -375,12 +491,16 @@ public class Truck extends Agent {
 	/*
 	 * Constructor with 3 arguments (ID, truckName and startingPoint).
 	 */
-	public Truck(int ID, String n, Point sP){
+	public Truck(int ID, String n, String gT, Point sP){
 		this.id = ID;
 		
 		if(!n.equals(""))
 			this.truckName = n;
 		else this.truckName = "Truck" + this.id;
+		
+		if(!gT.equals(""))
+				this.garbageType = gT;
+		else this.garbageType = "undifferentiated";
 		
 		if( (sP.getX() >= 0) && (sP.getY() >= 0))
 			this.startPosition = sP;
@@ -394,6 +514,8 @@ public class Truck extends Agent {
 		this.pathToBeWalked = new ArrayList<Point>();
 		
 		this.goals = new ArrayList<Goal>();
+		
+		this.garbageContainersToGoTo = new ArrayList<GarbageContainer>();
 	}
 
 }

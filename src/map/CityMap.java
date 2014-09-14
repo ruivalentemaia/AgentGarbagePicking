@@ -27,6 +27,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import agent.Truck;
+
 public class CityMap {
 	private int id;
 	private String name;
@@ -36,6 +38,9 @@ public class CityMap {
 	private List<Road> roads;
 	private List<Crossroads> crossroads;
 	private List<GarbageContainer> garbageContainers;
+	
+	//Trucks
+	private List<Truck> trucks;
 	
 	//XML file attributes
 	private String filePath = System.getProperty("user.dir") + "/maps";
@@ -156,6 +161,14 @@ public class CityMap {
 		this.garbageContainers = garbageContainers;
 	}
 	
+	public List<Truck> getTrucks() {
+		return trucks;
+	}
+
+	public void setTrucks(List<Truck> trucks) {
+		this.trucks = trucks;
+	}
+
 	public String getFilePath() {
 		return filePath;
 	}
@@ -266,6 +279,76 @@ public class CityMap {
 		return null;
 	}
 	
+	
+	/*
+	 * Gets the Road to which a GarbageContainer is closest to.
+	 */
+	public Road selectRoadFromGarbageContainer(Point gcPosition){
+		Iterator<Road> itRoad = this.roads.iterator();
+		while(itRoad.hasNext()) {
+			Road r = itRoad.next();
+			List<Point> roadPoints = new ArrayList<Point>();
+			roadPoints.addAll(r.getPoints());
+			Iterator<Point> roadPointsIt = roadPoints.iterator();
+			while(roadPointsIt.hasNext()){
+				Point n = roadPointsIt.next();
+				
+				//checks if the gc is on the left.
+				if( ( (gcPosition.getX() + 1) == n.getX()) && (gcPosition.getY() == n.getY())){
+					return r;
+				}
+				
+				//checks if the gc is on the right of this road point.
+				else if( ( (gcPosition.getX() - 1) == n.getX()) && (gcPosition.getY() == n.getY())) {
+					return r;
+				}
+				
+				//checks if the gc is down of this road point.
+				else if( (gcPosition.getX() == n.getX()) && ((gcPosition.getY() + 1) == n.getY())) {
+					return r;
+				}
+				
+				//checks if the gc is up of this road point.
+				else if( (gcPosition.getX() == n.getX()) && ((gcPosition.getY() - 1) == n.getY())) {
+					return r;
+				}
+			}
+		}
+		return null;
+	}
+	
+	
+	/*
+	 * Gets the point of a computed Road to which a GarbageContainer parameter
+	 * is closest to.
+	 */
+	public Point selectPointFromRoad(Road r, Point gcPosition) {
+		Iterator<Point> itPoints = r.getPoints().iterator();
+		while(itPoints.hasNext()){
+			Point n = itPoints.next();
+			
+			//checks if the gc is on the left.
+			if( ( (gcPosition.getX() + 1) == n.getX()) && (gcPosition.getY() == n.getY())){
+				return n;
+			}
+			
+			//checks if the gc is on the right of this road point.
+			else if( ( (gcPosition.getX() - 1) == n.getX()) && (gcPosition.getY() == n.getY())) {
+				return n;
+			}
+			
+			//checks if the gc is down of this road point.
+			else if( (gcPosition.getX() == n.getX()) && ((gcPosition.getY() + 1) == n.getY())) {
+				return n;
+			}
+			
+			//checks if the gc is up of this road point.
+			else if( (gcPosition.getX() == n.getX()) && ((gcPosition.getY() - 1) == n.getY())) {
+				return n;
+			}
+		}
+		return null;
+	}
 	
 	
 	/*

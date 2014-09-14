@@ -8,6 +8,7 @@ import map.Point;
 public class Path {
 	private int id;
 	private List<Point> points;
+	private int length;
 	
 	
 	public int getId() {
@@ -27,6 +28,14 @@ public class Path {
 	}
 	
 	
+	public int getLength() {
+		return length;
+	}
+
+	public void setLength(int length) {
+		this.length = length;
+	}
+
 	/*
 	 * Adds Point p to the points ArrayList.
 	 */
@@ -42,12 +51,12 @@ public class Path {
 		this.points.remove(p);
 	}
 	
-	
 	/*
 	 * Constructor of the Path object with only 1 argument (ID).
 	 */
 	public Path(int ID) {
 		this.id = ID;
 		this.points = new ArrayList<Point>();
+		this.length = 0;
 	}
 }
