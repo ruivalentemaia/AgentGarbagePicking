@@ -352,6 +352,124 @@ public class CityMap {
 	
 	
 	/*
+	 * Selects the neighbours of the parameter Point p and
+	 * returns them in a list.
+	 */
+	public List<Point> selectNeighbourPoints(Point p){
+		List<Point> neighbours = new ArrayList<Point>();
+		String pType = p.getType();
+		
+		if(pType.equals("CROSSROADS")){
+			
+			//left neighbour
+			int xNeighbour = p.getX() - 1;
+			int yNeighbour = p.getY();
+			String neighbourType = "ROAD";
+			Point neighbourLeft = new Point(xNeighbour, yNeighbour);
+			neighbourLeft.setType(neighbourType);
+			neighbours.add(neighbourLeft);
+			
+			//up neighbour
+			xNeighbour = p.getX();
+			yNeighbour = p.getY() - 1;
+			Point neighbourUp = new Point(xNeighbour, yNeighbour);
+			neighbourUp.setType(neighbourType);
+			neighbours.add(neighbourUp);
+			
+			//right neighbour
+			xNeighbour = p.getX() + 1;
+			yNeighbour = p.getY();
+			Point neighbourRight = new Point(xNeighbour, yNeighbour);
+			neighbourRight.setType(neighbourType);
+			neighbours.add(neighbourRight);
+			
+			//down neighbour
+			xNeighbour = p.getX();
+			yNeighbour = p.getY() + 1;
+			Point neighbourDown = new Point(xNeighbour, yNeighbour);
+			neighbourDown.setType(neighbourType);
+			neighbours.add(neighbourDown);
+			
+		}
+		else if(pType.equals("ROAD")){
+			Road r = this.selectRoadFromPoint(p);
+			String direction = r.getDirection();
+			
+			if(direction.equals("both")){
+				Point rightTestPoint = new Point(p.getX() + 1, p.getY());
+				Point leftTestPoint = new Point(p.getX() - 1, p.getY());
+				Point upTestPoint = new Point(p.getX(), p.getY() - 1);
+				Point downTestPoint = new Point(p.getX(), p.getY() + 1);
+				
+				Iterator<Point> itPoints = this.points.iterator();
+				while(itPoints.hasNext()){
+					Point t = itPoints.next();
+					if( (t.getX() == rightTestPoint.getX()) && (t.getY() == rightTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+					else if( (t.getX() == leftTestPoint.getX()) && (t.getY() == leftTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+					else if( (t.getX() == upTestPoint.getX()) && (t.getY() == upTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+					else if( (t.getX() == downTestPoint.getX()) && (t.getY() == downTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+				}
+			}
+			//to the right or up.
+			else if(direction.equals("->")){
+				Point rightTestPoint = new Point(p.getX() + 1, p.getY());
+				Point upTestPoint = new Point(p.getX(), p.getY() - 1);
+				Iterator<Point> itPoints = this.points.iterator();
+				while(itPoints.hasNext()){
+					Point t = itPoints.next();
+					if( (t.getX() == rightTestPoint.getX()) && (t.getY() == rightTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+					else if( (t.getX() == upTestPoint.getX()) && (t.getY() == upTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+				}
+			}
+			//to the left or down.
+			else if(direction.equals("<-")){
+				Point leftTestPoint = new Point(p.getX() - 1, p.getY());
+				Point downTestPoint = new Point(p.getX(), p.getY() + 1);
+				Iterator<Point> itPoints = this.points.iterator();
+				while(itPoints.hasNext()){
+					Point t = itPoints.next();
+					if( (t.getX() == leftTestPoint.getX()) && (t.getY() == leftTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+					else if( (t.getX() == downTestPoint.getX()) && (t.getY() == downTestPoint.getY()) ){
+						if( (t.getType().equals("ROAD")) || (t.getType().equals("CROSSROADS"))){
+							neighbours.add(t);
+						}
+					}
+				}
+			}
+		}
+		return neighbours;
+	}
+	
+	
+	/*
 	 * 
 	 * 
 	 * 		CROSSROADS GENERATION
@@ -974,7 +1092,7 @@ public class CityMap {
 		}
 		
 		Random rType = new Random();
-		int type = rType.nextInt(4-1) + 4; //there are 4 different types.
+		int type = rType.nextInt(4-1) + 1; //there are 4 different types.
 		switch(type) {
 			//paper
 			case 1:
@@ -1492,10 +1610,10 @@ public class CityMap {
 				String roadUpId = roadUpList.item(0).getTextContent();
 				System.out.println("\t \t Id = " + roadUpId);
 				
-				String roadUpDir = roadUpList.item(0).getTextContent();
+				String roadUpDir = roadUpList.item(1).getTextContent();
 				System.out.println("\t \t Direction = " + roadUpDir);
 				
-				String roadUpLength = roadUpList.item(0).getTextContent();
+				String roadUpLength = roadUpList.item(2).getTextContent();
 				System.out.println("\t \t Length = " + roadUpLength);
 				
 				Road up = new Road(Integer.parseInt(roadUpId.toString()),
@@ -1548,10 +1666,10 @@ public class CityMap {
 				String roadRightId = roadRightList.item(0).getTextContent();
 				System.out.println("\t \t Id = " + roadRightId);
 				
-				String roadRightDir = roadRightList.item(0).getTextContent();
+				String roadRightDir = roadRightList.item(1).getTextContent();
 				System.out.println("\t \t Direction = " + roadRightDir);
 				
-				String roadRightLength = roadRightList.item(0).getTextContent();
+				String roadRightLength = roadRightList.item(2).getTextContent();
 				System.out.println("\t \t Length = " + roadRightLength);
 				
 				Road right = new Road(Integer.parseInt(roadRightId.toString()),
@@ -1602,10 +1720,10 @@ public class CityMap {
 				String roadDownId = roadDownList.item(0).getTextContent();
 				System.out.println("\t \t Id = " + roadDownId);
 				
-				String roadDownDir = roadDownList.item(0).getTextContent();
+				String roadDownDir = roadDownList.item(1).getTextContent();
 				System.out.println("\t \t Direction = " + roadDownDir);
 				
-				String roadDownLength = roadDownList.item(0).getTextContent();
+				String roadDownLength = roadDownList.item(2).getTextContent();
 				System.out.println("\t \t Length = " + roadDownLength);
 				
 				Road down = new Road(Integer.parseInt(roadDownId.toString()),

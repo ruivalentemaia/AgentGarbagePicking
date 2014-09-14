@@ -194,6 +194,22 @@ public class Truck extends Agent {
 	}
 	
 	
+	/*
+	 * Selects one starting point (the closest to the coordinate (0,0) of
+	 * the completeCityMap attribute.
+	 */
+	public Point selectStartingPoint() {
+		Iterator<Point> pointIt = this.completeCityMap.getPoints().iterator();
+		while(pointIt.hasNext()) {
+			Point p = pointIt.next();
+			if(p.getType().equals("ROAD")){
+				System.out.println("Starting Point for Truck " + this.truckName + " = (" + p.getX() + ", " + p.getY() + ")");
+				return p;
+			}
+		}
+		return null;
+	}
+	
 	
 	/*
 	 * 
@@ -421,7 +437,7 @@ public class Truck extends Agent {
 	 * in the GarbageContainer used is the same as the type of garbage that this
 	 * Truck can transport.
 	 */
-	private void buildGoalsList() {
+	public void buildGoalsList() {
 		Iterator<GarbageContainer> gcIt = this.completeCityMap.getGarbageContainers().iterator();
 		int goalCounter = 1;
 		while(gcIt.hasNext()){
@@ -434,6 +450,7 @@ public class Truck extends Agent {
 				this.goals.add(g);
 				goalCounter++;
 				this.garbageContainersToGoTo.add(gc);
+				System.out.println("Goal " + g.getId() + " = (" + g.getEndPoint().getX() + ", " + g.getEndPoint().getY() + ")");
 			}
 		}
 	}
@@ -456,19 +473,58 @@ public class Truck extends Agent {
 	 */
 	public void doAStar(){
 		this.buildGoalsList();
-		AStar astar = new AStar(this.goals.get(1));
+		Goal goal = this.goals.get(1);
+		AStar astar = new AStar(goal);
+		int currentG = 1;
+		double currentH = goal.euclideanDistance(goal.getStartPoint(), goal.getEndPoint());
+		double neighbourH = 0;
+		int iteration = 1;
 		
-		while( !this.currentPosEqualToFinalPos(this.goals.get(1))) {
-			astar.calculateFHeuristicForOpenList();
+		while( !this.currentPosEqualToFinalPos(goal)) {
+			
+			astar.calculateFHeuristicForOpenList(currentG);
 			Point bestNode = astar.minimumFHeuristic();
+			currentH = goal.euclideanDistance(this.currentPosition, goal.getEndPoint());
+			
+			//DEBUG
+			System.out.println("Iteration " + iteration);
+			iteration++;
+			System.out.println("\t Best Node = (" + bestNode.getX() + ", " + bestNode.getY() + ")");
+			System.out.println("\t F = " + currentH);
+			
 			if( (bestNode.getX() == astar.getGoal().getEndPoint().getX()) &&
 				(bestNode.getY() == astar.getGoal().getEndPoint().getY()) ) {
 				break;
 			}
 			else {
+				this.pathWalked.add(this.currentPosition);
+				this.currentPosition = bestNode;
 				astar.getClosedList().add(bestNode);
+				
 				List<Point> neighbours = new ArrayList<Point>();
-				//TODO: method to calculate neighbours of a given Point.
+				neighbours = this.completeCityMap.selectNeighbourPoints(bestNode);
+				
+				Iterator<Point> neighboursIt = neighbours.iterator();
+				
+				while(neighboursIt.hasNext()){
+					Point neighbour = neighboursIt.next();
+					currentG = astar.getClosedList().size();
+					int neighbourG = currentG + 1;
+					neighbourH = goal.euclideanDistance(neighbour, goal.getEndPoint());
+					
+					
+					if( (astar.checkPointInClosedList(neighbour)) && (neighbourG > currentG) ){
+						
+					}
+					
+					else if(astar.checkPointInOpenList(neighbour) && (neighbourG > currentG)) {
+						
+					}
+					
+					else if( !(astar.checkPointInOpenList(neighbour)) || !(astar.checkPointInClosedList(neighbour))) {
+						astar.getOpenList().add(neighbour);
+					}
+				}
 			}
 		}
 	}
@@ -491,7 +547,7 @@ public class Truck extends Agent {
 	/*
 	 * Constructor with 3 arguments (ID, truckName and startingPoint).
 	 */
-	public Truck(int ID, String n, String gT, Point sP){
+	public Truck(int ID, String n, String gT){
 		this.id = ID;
 		
 		if(!n.equals(""))
@@ -502,14 +558,7 @@ public class Truck extends Agent {
 				this.garbageType = gT;
 		else this.garbageType = "undifferentiated";
 		
-		if( (sP.getX() >= 0) && (sP.getY() >= 0))
-			this.startPosition = sP;
-		else this.startPosition = new Point(0,0);
-		
-		this.currentPosition = startPosition;
-		
 		this.pathWalked = new ArrayList<Point>();
-		this.pathWalked.add(this.currentPosition);
 		
 		this.pathToBeWalked = new ArrayList<Point>();
 		

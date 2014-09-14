@@ -52,13 +52,12 @@ public class AStar {
 	/*
 	 * Calculates F = H + G for all the Points in the openList.
 	 */
-	public void calculateFHeuristicForOpenList() {
+	public void calculateFHeuristicForOpenList(int g) {
 		Iterator<Point> openListIt = this.openList.iterator();
 		while(openListIt.hasNext()){
 			Point p = openListIt.next();
-			double g = this.closedList.size();
 			double h = this.goal.euclideanDistance(p, this.goal.getEndPoint());
-			double f = g + h;
+			double f = h;
 			this.fHeuristic.put(f, p);
 		}
 	}
@@ -82,6 +81,40 @@ public class AStar {
 			}
 		}
 		return finalPoint;
+	}
+	
+	
+	/*
+	 * Checks if a parameter Point is in the openList.
+	 */
+	public boolean checkPointInOpenList(Point p){
+		boolean exists = false;
+		Iterator<Point> itOpen = this.openList.iterator();
+		while(itOpen.hasNext()){
+			Point n = itOpen.next();
+			if( (n.getX() == p.getX()) && (n.getY() == p.getY())) {
+				exists = true;
+				return exists;
+			}
+		}
+		return exists;
+	}
+	
+	
+	/*
+	 * Checks if a parameter Point is in the closedList.
+	 */
+	public boolean checkPointInClosedList(Point p){
+		boolean exists = false;
+		Iterator<Point> itClosed = this.closedList.iterator();
+		while(itClosed.hasNext()){
+			Point n = itClosed.next();
+			if( (n.getX() == p.getX()) && (n.getY() == p.getY())) {
+				exists = true;
+				return exists;
+			}
+		}
+		return exists;
 	}
 	
 	
