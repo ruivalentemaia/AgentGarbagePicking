@@ -9,7 +9,7 @@ public class Goal {
 	private int id;
 	private Point startPoint;
 	private Point endPoint;
-	private List<Path> possiblePaths;
+	//private List<Path> possiblePaths;
 	private Path bestPath;
 	
 	public int getId() {
@@ -41,15 +41,6 @@ public class Goal {
 		this.endPoint = endPoint;
 	}
 
-	public List<Path> getPossiblePaths() {
-		return possiblePaths;
-	}
-
-
-	public void setPossiblePaths(List<Path> possiblePaths) {
-		this.possiblePaths = possiblePaths;
-	}
-
 
 	public Path getBestPath() {
 		return bestPath;
@@ -79,6 +70,5 @@ public class Goal {
 		this.setStartPoint(sP);
 		this.setEndPoint(eP);
 		
-		this.possiblePaths = new ArrayList<Path>();
 	}
 }

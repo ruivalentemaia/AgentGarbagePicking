@@ -54,7 +54,7 @@ public class GarbageContainer {
 		this.id = Id;
 		this.type = t;
 		this.maxCapacity = maxC;
-		this.maxCapacity = currC;
+		this.currentOccupation = currC;
 		this.position = p;
 	}
 	

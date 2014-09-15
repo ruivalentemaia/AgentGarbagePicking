@@ -5,10 +5,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import ai.GreedyPathSearch;
 import ai.Goal;
 import map.CityMap;
+import map.Crossroads;
 import map.GarbageContainer;
 import map.Point;
 import map.Road;
@@ -52,7 +54,7 @@ public class Truck extends Agent {
 	}
 	
 	
-	/*
+	/**
 	 *
 	 * 
 	 * 
@@ -228,18 +230,22 @@ public class Truck extends Agent {
 	 */
 	public Point selectStartingPoint() {
 		Iterator<Point> pointIt = this.completeCityMap.getPoints().iterator();
+		double minDistance = 10000000;
+		double currentDistance = 0;
+		Point selectedPoint = new Point(0,0);
 		while(pointIt.hasNext()) {
 			Point p = pointIt.next();
-			if(p.getType().equals("ROAD")){
-				System.out.println("Starting Point for Truck " + this.truckName + " = (" + p.getX() + ", " + p.getY() + ")");
-				return p;
+			currentDistance = Math.sqrt(Math.pow(p.getX() - 0, 2) + Math.pow(p.getY() - 0, 2));
+			if( (currentDistance < minDistance) && (p.getType().equals("ROAD"))){
+				minDistance = currentDistance;
+				selectedPoint = p;
 			}
 		}
-		return null;
+		return selectedPoint;
 	}
 	
 	
-	/*
+	/**
 	 * 
 	 * 
 	 * 
@@ -449,7 +455,7 @@ public class Truck extends Agent {
 	
 	
 	
-	/*
+	/**
 	 * 
 	 * 
 	 * 
@@ -513,7 +519,7 @@ public class Truck extends Agent {
 	}
 	
 	
-	/**
+	/*
 	 * Performs Greedy path search for one Goal g, passed as parameter
 	 */
 	public void doGreedyPathSearch(Goal g){
@@ -523,11 +529,42 @@ public class Truck extends Agent {
 		double currentH = g.euclideanDistance(g.getStartPoint(), g.getEndPoint());
 		double neighbourH = 0;
 		int iteration = 1;
+		int nth = 0;
+		int problems = 1;
+		List<Point> blacklist = new ArrayList<Point>();
 		
 		while( !this.currentPosEqualToFinalPos(g)) {
-			greedy.calculateFHeuristicForOpenList();
-			Point bestNode = greedy.minimumFHeuristic();
 			currentH = g.euclideanDistance(this.currentPosition, g.getEndPoint());
+			
+			greedy.calculateFHeuristicForOpenList();
+			Point bestNode = new Point(0,0);
+			
+			if(nth == 0)
+				bestNode = greedy.minimumFHeuristic();
+			else {
+				bestNode = greedy.getMinimumValue(nth);
+				nth = 0;
+			}
+			
+			/*
+			 * Checks if bestNode is in the blacklist.
+			 */
+			Iterator<Point> blacklistIt = blacklist.iterator();
+			while(blacklistIt.hasNext()){
+				Point black = blacklistIt.next();
+				if( (black.getX() == bestNode.getX()) && (black.getY() == bestNode.getY())) {
+					Random rN = new Random();
+					nth = rN.nextInt(4);
+					bestNode = greedy.getMinimumValue(nth);
+					break;
+				}
+			}
+			
+			Point fivePositionsAgo = new Point(0,0);
+			if(iteration > 5){
+				fivePositionsAgo = this.pathToBeWalked.get(this.pathToBeWalked.size() - 5);
+			}
+			
 			this.pathToBeWalked.add(this.currentPosition);
 			
 			if( (bestNode.getX() == greedy.getGoal().getEndPoint().getX()) &&
@@ -556,11 +593,80 @@ public class Truck extends Agent {
 					}
 				}
 			}
+			
+			//loop detector.
+			if(fivePositionsAgo.equals(this.currentPosition)){
+				
+				//search for the last Crossroads crossed.
+				Iterator<Point> itPathWalked = this.pathToBeWalked.iterator();
+				Crossroads lastCrossroadCrossed = new Crossroads(1, new Point(0,0));
+				int skip = 0;
+				while(itPathWalked.hasNext()){
+					Point p = itPathWalked.next();
+					if(p.getType().equals("CROSSROADS")){
+						lastCrossroadCrossed.setCenter(new Point(p.getX(), p.getY()));
+						Iterator<Crossroads> itCross = this.completeCityMap.getCrossroads().iterator();
+						while(itCross.hasNext()){
+							Crossroads c = itCross.next();
+							if( (c.getCenter().getX() == lastCrossroadCrossed.getCenter().getX()) &&
+								(c.getCenter().getY() == lastCrossroadCrossed.getCenter().getY())){
+								lastCrossroadCrossed = c;
+							}
+						}
+					}
+				}
+				
+				/*
+				 * Counts how many times the lastCrossroadCrossed
+				 * comes in the list.
+				 */
+				itPathWalked = this.pathToBeWalked.iterator();
+				while(itPathWalked.hasNext()){
+					Point p = itPathWalked.next();
+					if( (p.getX() == lastCrossroadCrossed.getCenter().getX()) &&
+							(p.getY() == lastCrossroadCrossed.getCenter().getY()) &&
+							(p.getType().equals("CROSSROADS"))){
+						skip++;
+					}
+				}
+				
+				/* Removes everything that was inserted after the 
+				 * lastCrossroadCrossed in pathToBeWalked.
+				 */
+				itPathWalked = this.pathToBeWalked.iterator();
+				int skipCopy = skip;
+				skip = 0;
+				boolean remove = false;
+				while(itPathWalked.hasNext()){
+					Point p = itPathWalked.next();
+					
+					if(remove) {
+						itPathWalked.remove();
+						blacklist.add(p);
+					}
+					
+					if( (p.getX() == lastCrossroadCrossed.getCenter().getX()) &&
+						(p.getY() == lastCrossroadCrossed.getCenter().getY()) &&
+						(p.getType().equals("CROSSROADS"))){
+						skip++;
+						if(skip == skipCopy)
+							remove = true;
+					}
+					
+				}
+				
+				greedy.backtrack(lastCrossroadCrossed);
+				this.currentPosition = new Point(lastCrossroadCrossed.getCenter().getX(),
+												 lastCrossroadCrossed.getCenter().getY());
+				this.currentPosition.setType("CROSSROADS");
+				nth++;
+			}
+			iteration++;
 		}
 	}
 	
 	
-	/**
+	/*
 	 * Does the GreedyPathSearch for each one of the goals available
 	 * in the goals List.
 	 */
@@ -568,6 +674,7 @@ public class Truck extends Agent {
 		Iterator<Goal> itGoal = this.goals.iterator();
 		Goal[] goalsTemp = new Goal[this.goals.size()];
 		int counter = 0;
+		System.out.println("\n");
 		while(itGoal.hasNext()){
 			Goal g = itGoal.next();
 			goalsTemp[counter] = g;
@@ -602,6 +709,25 @@ public class Truck extends Agent {
 	
 	
 	/*
+	 * Sets everything the Truck needs to be abldoGreedyPathSearche to start collecting
+	 * garbage. Should be the last method to be called on the Truck
+	 * object before the Garbage Picking process starts.
+	 */
+	public void prepare(CityMap map) {
+		this.setCompleteCityMap(map);
+		
+		Point startingPoint = this.selectStartingPoint();
+		this.setStartPosition(startingPoint);
+		this.setCurrentPosition(startingPoint);
+		
+		this.buildGoalsList();
+		this.buildTotalPathPlanning();
+		
+		this.printPathToBeWalked();
+	}
+	
+	
+	/**
 	 * 
 	 * 
 	 * 

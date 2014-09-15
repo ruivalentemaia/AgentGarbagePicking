@@ -14,26 +14,27 @@ import map.Point;
 
 public class GreedyPathTest {
 	public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException, TransformerException  {
-		//Exports map to an xml file.
-		//CityMap map = new CityMap(25,30,20,25);
-		//map.exportMapToXML("randomMapTest25302025");
+		
+		//CityMap map = new CityMap(25,40, 20, 30);
+		//map.exportMapToXML("mapTest25402030.xml");
 		
 		//Imports map from xml file.
-		CityMap map = new CityMap("randomMapTest25302025.xml");
+		CityMap map = new CityMap("mapTest25402030.xml");
+		map.printCityMapString();
 		map.getGarbageContainers().get(1).setType("undifferentiated");
+		map.getGarbageContainers().get(2).setType("glass");
 		
 		//Creates one Truck, allocates to it the CityMap and builds its goals list.
 		Truck t1 = new Truck(1, "t1", "undifferentiated");
-		t1.setCompleteCityMap(map);
+		t1.prepare(map);
 		
-		Point startingPoint = t1.selectStartingPoint();
-		t1.setStartPosition(startingPoint);
-		t1.setCurrentPosition(startingPoint);
+		Truck t2 = new Truck(2, "t2", "glass");
+		t2.prepare(map);
 		
-		map.printCityMapString();
-		t1.buildGoalsList();
-		t1.buildTotalPathPlanning();
-		t1.printPathToBeWalked();
+		Truck t3 = new Truck(3, "t3", "paper");
+		t3.prepare(map);
 		
+		Truck t4 = new Truck(4, "t4", "container");
+		t4.prepare(map);
 	}
 }

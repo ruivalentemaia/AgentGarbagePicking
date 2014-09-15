@@ -6,7 +6,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
+import map.Crossroads;
 import map.Point;
 
 public class GreedyPathSearch {
@@ -83,6 +87,29 @@ public class GreedyPathSearch {
 		return finalPoint;
 	}
 	
+	/*
+	 * Orders the fHeuristic HashMap by key.
+	 */
+	private double[] orderFHeuristic() {
+		Map<Double, Point> map = new TreeMap<Double, Point>(this.fHeuristic);
+		double[] heuristics = new double[map.size()];
+		int counter = 0;
+		for(Entry<Double, Point> entry : map.entrySet()){
+			heuristics[counter] = entry.getKey();
+			counter++;
+		}
+		return heuristics;
+	}
+	
+	/*
+	 * Get nth minimum value in the fHeuristics map.
+	 */
+	public Point getMinimumValue(int n){
+		double[] heuristics = this.orderFHeuristic();
+		double minimumValue = heuristics[n];
+		return this.fHeuristic.get(minimumValue);
+	}
+	
 	
 	/*
 	 * Checks if a parameter Point is in the openList.
@@ -115,6 +142,70 @@ public class GreedyPathSearch {
 			}
 		}
 		return exists;
+	}
+	
+	/*
+	 * Backtracks the path when the path found is looping in a local minimum.
+	 */
+	public void backtrack(Crossroads toCrossroad){
+		Point center = toCrossroad.getCenter();
+		center.setType("CROSSROADS");
+		double lowerHeuristic = 100000;
+		
+		/*
+		 * Removes all the entries in the fHeuristic Hashmap
+		 * which keys (heuristic values) are lower than the one
+		 * of the last Crossroads.
+		 */
+		for(Entry<Double, Point> entry : this.fHeuristic.entrySet()){
+			if( (center.getX() == entry.getValue().getX()) && 
+				(center.getY() == entry.getValue().getY()) &&
+				(center.getType().equals(entry.getValue().getType()))) {
+					lowerHeuristic = entry.getKey();
+					break;
+			}
+		}
+		
+		Iterator it = this.fHeuristic.entrySet().iterator();
+		while(it.hasNext()){
+			Map.Entry<Double, Point> entry = (Entry<Double, Point>) it.next();
+			if(entry.getKey() < lowerHeuristic){
+				it.remove();
+			}
+		}
+		
+		/*
+		 * Removes all elements inserted in the openList after the
+		 * Crossroads toCrossroad to which we want to backtrack.
+		 */
+		Iterator<Point> itOL = this.openList.iterator();
+		boolean toRemove = false;
+		while(itOL.hasNext()){
+			Point p = itOL.next();
+			if( (p.getX() == center.getX()) && (p.getY() == center.getY()) && (p.getType().equals(center.getType()))) {
+				toRemove = true;
+			}
+			if(toRemove){
+				itOL.remove();
+			}
+		}
+		
+		/*
+		 * Removes all elements inserted in the openList after the
+		 * Crossroads toCrossroad to which we want to backtrack.
+		 */
+		Iterator<Point> itCL = this.closedList.iterator();
+		toRemove = false;
+		while(itCL.hasNext()){
+			Point p = itCL.next();
+			if( (p.getX() == center.getX()) && (p.getY() == center.getY()) && (p.getType().equals(center.getType()))) {
+				toRemove = true;
+			}
+			if(toRemove){
+				itCL.remove();
+			}
+		}
+		
 	}
 	
 	
