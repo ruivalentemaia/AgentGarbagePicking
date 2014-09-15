@@ -1,10 +1,12 @@
 package agent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import ai.AStar;
+import ai.GreedyPathSearch;
 import ai.Goal;
 import map.CityMap;
 import map.GarbageContainer;
@@ -29,6 +31,25 @@ public class Truck extends Agent {
 	
 	//complete list of the CityMap points
 	private CityMap completeCityMap;
+	
+	//Comparators for arrays.
+	static private Comparator<Goal> orderId;
+	
+	
+	static {
+		orderId = new Comparator<Goal>() {
+			@Override
+			public int compare(Goal o1, Goal o2) {
+				if(o1.getId() == o2.getId())
+					return 0;
+				else if(o1.getId() > o2.getId()){
+					return 1;
+				}
+				else return -1;
+			}
+			
+		};
+	}
 	
 	
 	/*
@@ -160,6 +181,13 @@ public class Truck extends Agent {
 
 	public void setCompleteCityMap(CityMap completeCityMap) {
 		this.completeCityMap = completeCityMap;
+	}
+	
+	/*
+	 * Orders by Id an array of Goals.
+	 */
+	public void orderGoalById(Goal[] g){
+		Arrays.sort(g, orderId);
 	}
 	
 	
@@ -443,6 +471,7 @@ public class Truck extends Agent {
 		while(gcIt.hasNext()){
 			GarbageContainer gc = gcIt.next();
 			if(gc.getType().equals(this.getGarbageType())){
+				//going.
 				Point gcPos = gc.getPosition();
 				Road r = this.completeCityMap.selectRoadFromGarbageContainer(gcPos);
 				Point finalPos = this.completeCityMap.selectPointFromRoad(r, gcPos);
@@ -450,7 +479,23 @@ public class Truck extends Agent {
 				this.goals.add(g);
 				goalCounter++;
 				this.garbageContainersToGoTo.add(gc);
-				System.out.println("Goal " + g.getId() + " = (" + g.getEndPoint().getX() + ", " + g.getEndPoint().getY() + ")");
+				
+				//coming back to deliver garbage.
+				if(gc.getCurrentOccupation() == this.getMaxCapacity()){
+					Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
+					this.goals.add(gBack);
+					goalCounter++;
+				}
+				
+				else if(gc.getCurrentOccupation() > this.getMaxCapacity()){
+					Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
+					this.goals.add(gBack);
+					goalCounter++;
+				}
+				
+				else if(gc.getCurrentOccupation() < this.getMaxCapacity()) {
+					
+				}
 			}
 		}
 	}
@@ -468,38 +513,33 @@ public class Truck extends Agent {
 	}
 	
 	
-	/*
-	 * 
+	/**
+	 * Performs Greedy path search for one Goal g, passed as parameter
 	 */
-	public void doAStar(){
+	public void doGreedyPathSearch(Goal g){
 		this.buildGoalsList();
-		Goal goal = this.goals.get(1);
-		AStar astar = new AStar(goal);
+		GreedyPathSearch greedy = new GreedyPathSearch(g);
 		int currentG = 1;
-		double currentH = goal.euclideanDistance(goal.getStartPoint(), goal.getEndPoint());
+		double currentH = g.euclideanDistance(g.getStartPoint(), g.getEndPoint());
 		double neighbourH = 0;
 		int iteration = 1;
 		
-		while( !this.currentPosEqualToFinalPos(goal)) {
+		while( !this.currentPosEqualToFinalPos(g)) {
+			greedy.calculateFHeuristicForOpenList();
+			Point bestNode = greedy.minimumFHeuristic();
+			currentH = g.euclideanDistance(this.currentPosition, g.getEndPoint());
+			this.pathToBeWalked.add(this.currentPosition);
 			
-			astar.calculateFHeuristicForOpenList(currentG);
-			Point bestNode = astar.minimumFHeuristic();
-			currentH = goal.euclideanDistance(this.currentPosition, goal.getEndPoint());
-			
-			//DEBUG
-			System.out.println("Iteration " + iteration);
-			iteration++;
-			System.out.println("\t Best Node = (" + bestNode.getX() + ", " + bestNode.getY() + ")");
-			System.out.println("\t F = " + currentH);
-			
-			if( (bestNode.getX() == astar.getGoal().getEndPoint().getX()) &&
-				(bestNode.getY() == astar.getGoal().getEndPoint().getY()) ) {
+			if( (bestNode.getX() == greedy.getGoal().getEndPoint().getX()) &&
+				(bestNode.getY() == greedy.getGoal().getEndPoint().getY()) ) {
+				System.out.println("Path Planning complete for Goal " + g.getId() + " of Truck " + this.getTruckName() + " complete.");
+				this.currentPosition = bestNode;
+				this.pathToBeWalked.add(this.currentPosition);
 				break;
 			}
 			else {
-				this.pathWalked.add(this.currentPosition);
 				this.currentPosition = bestNode;
-				astar.getClosedList().add(bestNode);
+				greedy.getClosedList().add(bestNode);
 				
 				List<Point> neighbours = new ArrayList<Point>();
 				neighbours = this.completeCityMap.selectNeighbourPoints(bestNode);
@@ -508,27 +548,57 @@ public class Truck extends Agent {
 				
 				while(neighboursIt.hasNext()){
 					Point neighbour = neighboursIt.next();
-					currentG = astar.getClosedList().size();
-					int neighbourG = currentG + 1;
-					neighbourH = goal.euclideanDistance(neighbour, goal.getEndPoint());
+					currentG = greedy.getClosedList().size();
+					neighbourH = g.euclideanDistance(neighbour, g.getEndPoint());
 					
-					
-					if( (astar.checkPointInClosedList(neighbour)) && (neighbourG > currentG) ){
-						
-					}
-					
-					else if(astar.checkPointInOpenList(neighbour) && (neighbourG > currentG)) {
-						
-					}
-					
-					else if( !(astar.checkPointInOpenList(neighbour)) || !(astar.checkPointInClosedList(neighbour))) {
-						astar.getOpenList().add(neighbour);
+					if( !(greedy.checkPointInOpenList(neighbour)) || !(greedy.checkPointInClosedList(neighbour))) {
+						greedy.getOpenList().add(neighbour);
 					}
 				}
 			}
 		}
 	}
 	
+	
+	/**
+	 * Does the GreedyPathSearch for each one of the goals available
+	 * in the goals List.
+	 */
+	public void buildTotalPathPlanning() {
+		Iterator<Goal> itGoal = this.goals.iterator();
+		Goal[] goalsTemp = new Goal[this.goals.size()];
+		int counter = 0;
+		while(itGoal.hasNext()){
+			Goal g = itGoal.next();
+			goalsTemp[counter] = g;
+			counter++;
+			System.out.println("Goal " + g.getId() + " = (" + g.getEndPoint().getX() + ", " + g.getEndPoint().getY() + ")");
+		}
+		
+		this.orderGoalById(goalsTemp);
+		
+		for(int i = 0; i < goalsTemp.length; i++){
+			this.doGreedyPathSearch(goalsTemp[i]);
+		}
+	}
+	
+	/*
+	 * Prints the pathToBeWalked by this Truck.
+	 */
+	public void printPathToBeWalked(){
+		Iterator<Point> itPath = this.pathToBeWalked.iterator();
+		String toPrint = "\nPath to be walked by Truck " + this.truckName + ": \n";
+		toPrint+= "[ ";
+		while(itPath.hasNext()){
+			Point p = itPath.next();
+			if(itPath.hasNext()){
+				toPrint += "(" + p.getX() + ", " + p.getY() + "), ";
+			}
+			else toPrint += "(" + p.getX() + ", " + p.getY() + ")";
+		}
+		toPrint += "]";
+		System.out.println(toPrint);
+	}
 	
 	
 	/*

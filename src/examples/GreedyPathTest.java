@@ -8,11 +8,11 @@ import javax.xml.transform.TransformerException;
 import org.xml.sax.SAXException;
 
 import agent.Truck;
-import ai.AStar;
+import ai.GreedyPathSearch;
 import map.CityMap;
 import map.Point;
 
-public class AStarTest {
+public class GreedyPathTest {
 	public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException, TransformerException  {
 		//Exports map to an xml file.
 		//CityMap map = new CityMap(25,30,20,25);
@@ -32,9 +32,8 @@ public class AStarTest {
 		
 		map.printCityMapString();
 		t1.buildGoalsList();
-		
-		//
-		t1.doAStar();
+		t1.buildTotalPathPlanning();
+		t1.printPathToBeWalked();
 		
 	}
 }

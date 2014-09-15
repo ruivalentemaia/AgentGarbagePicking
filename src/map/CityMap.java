@@ -280,7 +280,7 @@ public class CityMap {
 	}
 	
 	
-	/*
+	/**
 	 * Gets the Road to which a GarbageContainer is closest to.
 	 */
 	public Road selectRoadFromGarbageContainer(Point gcPosition){
@@ -1812,6 +1812,7 @@ public class CityMap {
 		
 		//allocates all points in the points ArrayList
 		this.allocatePoints();
+		this.allocatePointTypeValuesInRoads();
 	}
 	
 	
@@ -1890,6 +1891,27 @@ public class CityMap {
 		System.out.println();
 	}
 	
+	/*
+	 * Allocates types values in the roads arraylist.
+	 */
+	private void allocatePointTypeValuesInRoads(){
+		Iterator<Road> itRoads = this.roads.iterator();
+		while(itRoads.hasNext()) {
+			Road r = itRoads.next();
+			Iterator<Point> itRoadPoints = r.getPoints().iterator();
+			while(itRoadPoints.hasNext()){
+				Point rP = itRoadPoints.next();
+				Iterator<Point> itPoints = this.points.iterator();
+				while(itPoints.hasNext()) {
+					Point p = itPoints.next();
+					if( (p.getX() == rP.getX()) && (p.getY() == rP.getY())){
+						rP.setType(p.getType());
+					}
+				}
+			}
+		}
+	}
+	
 	
 	/*
 	 * 
@@ -1954,6 +1976,7 @@ public class CityMap {
 		
 		//allocates all points in the points ArrayList
 		this.allocatePoints();
+		this.allocatePointTypeValuesInRoads();
 	}
 	
 	

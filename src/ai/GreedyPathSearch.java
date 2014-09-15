@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 
 import map.Point;
 
-public class AStar {
+public class GreedyPathSearch {
 	private List<Point> openList;
 	private List<Point> closedList;
 	private Goal goal;
@@ -50,9 +50,9 @@ public class AStar {
 
 	
 	/*
-	 * Calculates F = H + G for all the Points in the openList.
+	 * Calculates F = H for all the Points in the openList.
 	 */
-	public void calculateFHeuristicForOpenList(int g) {
+	public void calculateFHeuristicForOpenList() {
 		Iterator<Point> openListIt = this.openList.iterator();
 		while(openListIt.hasNext()){
 			Point p = openListIt.next();
@@ -77,7 +77,7 @@ public class AStar {
 			d = heu.getKey();
 			if(d < min) {
 				min = d;
-				finalPoint = p; 
+				finalPoint = p;
 			}
 		}
 		return finalPoint;
@@ -119,9 +119,9 @@ public class AStar {
 	
 	
 	/*
-	 * A* constructor.
+	 * Greedy algorithm constructor.
 	 */
-	public AStar(Goal goal){
+	public GreedyPathSearch(Goal goal){
 		this.openList = new ArrayList<Point>();
 		this.closedList = new ArrayList<Point>();
 		this.goal = goal;
