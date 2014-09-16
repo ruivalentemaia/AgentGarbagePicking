@@ -9,6 +9,7 @@ import java.util.Random;
 
 import ai.GreedyPathSearch;
 import ai.Goal;
+import ai.Path;
 import map.CityMap;
 import map.Crossroads;
 import map.GarbageContainer;
@@ -242,6 +243,22 @@ public class Truck extends Agent {
 			}
 		}
 		return selectedPoint;
+	}
+	
+	
+	/*
+	 * Checks if this Truck has one Goal passed as parameter.
+	 */
+	public boolean hasGoal(Goal g){
+		boolean hasGoal = false;
+		Iterator<Goal> itGoals = this.goals.iterator();
+		while(itGoals.hasNext()){
+			Goal goal = itGoals.next();
+			if(g.checkGoalEquality(g, goal)){
+				hasGoal = true;
+			}
+		}
+		return hasGoal;
 	}
 	
 	
@@ -482,6 +499,8 @@ public class Truck extends Agent {
 				Road r = this.completeCityMap.selectRoadFromGarbageContainer(gcPos);
 				Point finalPos = this.completeCityMap.selectPointFromRoad(r, gcPos);
 				Goal g = new Goal(goalCounter, this.startPosition, finalPos);
+				Path p = new Path(goalCounter);
+				g.setBestPath(p);
 				this.goals.add(g);
 				goalCounter++;
 				this.garbageContainersToGoTo.add(gc);
@@ -489,12 +508,16 @@ public class Truck extends Agent {
 				//coming back to deliver garbage.
 				if(gc.getCurrentOccupation() == this.getMaxCapacity()){
 					Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
+					Path path = new Path(goalCounter);
+					gBack.setBestPath(path);
 					this.goals.add(gBack);
 					goalCounter++;
 				}
 				
 				else if(gc.getCurrentOccupation() > this.getMaxCapacity()){
 					Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
+					Path path = new Path(goalCounter);
+					gBack.setBestPath(path);
 					this.goals.add(gBack);
 					goalCounter++;
 				}
@@ -525,12 +548,9 @@ public class Truck extends Agent {
 	public void doGreedyPathSearch(Goal g){
 		this.buildGoalsList();
 		GreedyPathSearch greedy = new GreedyPathSearch(g);
-		int currentG = 1;
 		double currentH = g.euclideanDistance(g.getStartPoint(), g.getEndPoint());
-		double neighbourH = 0;
 		int iteration = 1;
 		int nth = 0;
-		int problems = 1;
 		List<Point> blacklist = new ArrayList<Point>();
 		
 		while( !this.currentPosEqualToFinalPos(g)) {
@@ -572,6 +592,7 @@ public class Truck extends Agent {
 				System.out.println("Path Planning complete for Goal " + g.getId() + " of Truck " + this.getTruckName() + " complete.");
 				this.currentPosition = bestNode;
 				this.pathToBeWalked.add(this.currentPosition);
+				
 				break;
 			}
 			else {
@@ -585,8 +606,6 @@ public class Truck extends Agent {
 				
 				while(neighboursIt.hasNext()){
 					Point neighbour = neighboursIt.next();
-					currentG = greedy.getClosedList().size();
-					neighbourH = g.euclideanDistance(neighbour, g.getEndPoint());
 					
 					if( !(greedy.checkPointInOpenList(neighbour)) || !(greedy.checkPointInClosedList(neighbour))) {
 						greedy.getOpenList().add(neighbour);
@@ -663,6 +682,13 @@ public class Truck extends Agent {
 			}
 			iteration++;
 		}
+		
+		int goalIndex = this.goals.indexOf(g);
+		Path path = g.getBestPath();
+		path.setPoints(this.pathToBeWalked);
+		path.setLength(this.pathToBeWalked.size());
+		g.setBestPath(path);
+		this.goals.get(goalIndex).setBestPath(path);		
 	}
 	
 	

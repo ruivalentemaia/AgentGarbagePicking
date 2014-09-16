@@ -9,7 +9,6 @@ public class Goal {
 	private int id;
 	private Point startPoint;
 	private Point endPoint;
-	//private List<Path> possiblePaths;
 	private Path bestPath;
 	
 	public int getId() {
@@ -58,6 +57,20 @@ public class Goal {
 	public double euclideanDistance(Point start, Point destination){
 		double h = Math.sqrt(Math.pow((start.getX() - destination.getX()), 2) + Math.pow(start.getY()-destination.getY(), 2));
 		return h;
+	}
+	
+	
+	/*
+	 * Checks if two goals passed as parameter are the same.
+	 */
+	public boolean checkGoalEquality(Goal g1, Goal g2){
+		if( (g1.getStartPoint().getX() == g2.getStartPoint().getX()) 
+				&& (g1.getStartPoint().getY() == g2.getStartPoint().getY()) 
+				&& (g1.getEndPoint().getX() == g2.getEndPoint().getX()) 
+				&& (g1.getEndPoint().getY() == g2.getEndPoint().getY())) {
+			return true;
+		}
+		else return false;
 	}
 	
 
