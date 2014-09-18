@@ -28,6 +28,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import agent.Truck;
+import ai.Options;
 
 public class CityMap {
 	private int id;
@@ -50,6 +51,9 @@ public class CityMap {
 	static private Comparator<Crossroads> orderCrossroadsWidthAsc;
 	static private Comparator<Crossroads> orderCrossroadsHeightDesc;
 	static private Comparator<Crossroads> orderCrossroadsHeightAsc;
+	
+	//Options
+	private Options options;
 	
 	static {
 		orderCrossroadsWidthDesc = new Comparator<Crossroads>() {
@@ -175,6 +179,14 @@ public class CityMap {
 
 	public void setFilePath(String filePath) {
 		this.filePath = filePath;
+	}
+
+	public Options getOptions() {
+		return options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
 	}
 
 	/*
@@ -467,6 +479,38 @@ public class CityMap {
 		}
 		return neighbours;
 	}
+	
+	
+	/*
+	 * Selects the Trucks from the truck list that transport the garbage
+	 * type passed as parameter.
+	 */
+	public List<Truck> selectTruckByGarbageType(String type){
+		List<Truck> trucksByType = new ArrayList<Truck>();
+		Iterator<Truck> truckIt = this.trucks.iterator();
+		while(truckIt.hasNext()){
+			Truck t = truckIt.next();
+			if(t.getGarbageType().equals(type))
+				trucksByType.add(t);
+		}
+		return trucksByType;
+	}
+	
+	
+	/*
+	 * Selects the GarbageContainers by garbage type passed as parameter.
+	 */
+	public List<GarbageContainer> selectGarbageContainersByType(String type){
+		List<GarbageContainer> gcByType = new ArrayList<GarbageContainer>();
+		Iterator<GarbageContainer> gcIt = this.garbageContainers.iterator();
+		while(gcIt.hasNext()) {
+			GarbageContainer gc = gcIt.next();
+			if(gc.getType().equals(type))
+				gcByType.add(gc);
+		}
+		return gcByType;
+	}
+	
 	
 	
 	/*
@@ -1776,6 +1820,10 @@ public class CityMap {
 		//allocates all points in the points ArrayList
 		this.allocatePoints();
 		this.allocatePointTypeValuesInRoads();
+		
+		//Options
+		this.options = new Options();
+		options.setAllTrucksStartingSamePosition(false);
 	}
 	
 	
@@ -1936,6 +1984,10 @@ public class CityMap {
 		
 		//Trucks.
 		this.trucks = new ArrayList<Truck>();
+		
+		//Options
+		this.options = new Options();
+		options.setAllTrucksStartingSamePosition(false);
 	}
 	
 	

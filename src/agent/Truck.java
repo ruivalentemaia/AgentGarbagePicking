@@ -6,6 +6,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import ai.GreedyPathSearch;
 import ai.Goal;
@@ -226,6 +228,25 @@ public class Truck extends Agent {
 	
 	
 	/*
+	 * Checks if this Truck can start in the position that is to be
+	 * assigned as startingPosition.
+	 */
+	private boolean canStartInThisPosition(Point p) {
+		boolean itCan = true;
+		Iterator<Truck> itTruck = this.completeCityMap.getTrucks().iterator();
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			if( (t.getStartPosition().getX() == p.getX()) &&
+				(t.getStartPosition().getY() == p.getY())) {
+				itCan = false;
+				break;
+			}
+		}
+		return itCan;
+	}
+	
+	
+	/*
 	 * Selects one starting point (the closest to the coordinate (0,0) of
 	 * the completeCityMap attribute.
 	 */
@@ -234,14 +255,31 @@ public class Truck extends Agent {
 		double minDistance = 10000000;
 		double currentDistance = 0;
 		Point selectedPoint = new Point(0,0);
-		while(pointIt.hasNext()) {
-			Point p = pointIt.next();
-			currentDistance = Math.sqrt(Math.pow(p.getX() - 0, 2) + Math.pow(p.getY() - 0, 2));
-			if( (currentDistance < minDistance) && (p.getType().equals("ROAD"))){
-				minDistance = currentDistance;
-				selectedPoint = p;
+		
+		if(this.completeCityMap.getOptions().isAllTrucksStartingSamePosition()){
+			while(pointIt.hasNext()) {
+				Point p = pointIt.next();
+				currentDistance = Math.sqrt(Math.pow(p.getX() - 0, 2) + Math.pow(p.getY() - 0, 2));
+				if( (currentDistance < minDistance) && (p.getType().equals("ROAD"))){
+					minDistance = currentDistance;
+					selectedPoint = p;
+				}
 			}
 		}
+		
+		else {
+			while(pointIt.hasNext()) {
+				Point p = pointIt.next();
+				if(this.canStartInThisPosition(p)){
+					currentDistance = Math.sqrt(Math.pow(p.getX() - 0, 2) + Math.pow(p.getY() - 0, 2));
+					if( (currentDistance < minDistance) && (p.getType().equals("ROAD"))){
+						minDistance = currentDistance;
+						selectedPoint = p;
+					}
+				}
+			}
+		}
+		
 		return selectedPoint;
 	}
 	
@@ -259,6 +297,29 @@ public class Truck extends Agent {
 			}
 		}
 		return hasGoal;
+	}
+	
+	
+	/*
+	 * Remove repeated Goals from the goals list.
+	 */
+	public void removeRepeatedGoals() {
+		SortedSet<Goal> goals = new TreeSet<Goal>(new Comparator<Goal>() {
+		    @Override
+		    public int compare(Goal g1, Goal g2) {
+		        if ( (g1.getStartPoint().getX() == g2.getStartPoint().getX()) &&
+		        		 (g1.getStartPoint().getY() == g2.getStartPoint().getY()) &&
+		        		 (g1.getEndPoint().getX() == g2.getEndPoint().getX()) &&
+		        		 (g1.getEndPoint().getY() == g2.getEndPoint().getY())) {
+		        	return 0;
+		        }
+		        return 1;
+		    }
+		});
+		goals.addAll(this.goals);
+		
+		this.goals.clear();
+		this.goals.addAll(goals);
 	}
 	
 	
@@ -523,10 +584,11 @@ public class Truck extends Agent {
 				}
 				
 				else if(gc.getCurrentOccupation() < this.getMaxCapacity()) {
-					
+					System.out.println("TRUCK can go to the next Goal !");
 				}
 			}
 		}
+		this.removeRepeatedGoals();
 	}
 	
 	
@@ -545,7 +607,7 @@ public class Truck extends Agent {
 	/*
 	 * Performs Greedy path search for one Goal g, passed as parameter
 	 */
-	public void doGreedyPathSearch(Goal g){
+	public void doGreedyPathSearch(Goal g, int sizeOfCurrentPath){
 		this.buildGoalsList();
 		GreedyPathSearch greedy = new GreedyPathSearch(g);
 		double currentH = g.euclideanDistance(g.getStartPoint(), g.getEndPoint());
@@ -592,7 +654,6 @@ public class Truck extends Agent {
 				System.out.println("Path Planning complete for Goal " + g.getId() + " of Truck " + this.getTruckName() + " complete.");
 				this.currentPosition = bestNode;
 				this.pathToBeWalked.add(this.currentPosition);
-				
 				break;
 			}
 			else {
@@ -686,7 +747,7 @@ public class Truck extends Agent {
 		int goalIndex = this.goals.indexOf(g);
 		Path path = g.getBestPath();
 		path.setPoints(this.pathToBeWalked);
-		path.setLength(this.pathToBeWalked.size());
+		path.setLength(this.pathToBeWalked.size()-sizeOfCurrentPath);
 		g.setBestPath(path);
 		this.goals.get(goalIndex).setBestPath(path);		
 	}
@@ -711,7 +772,7 @@ public class Truck extends Agent {
 		this.orderGoalById(goalsTemp);
 		
 		for(int i = 0; i < goalsTemp.length; i++){
-			this.doGreedyPathSearch(goalsTemp[i]);
+			this.doGreedyPathSearch(goalsTemp[i], this.pathToBeWalked.size());
 		}
 	}
 	
