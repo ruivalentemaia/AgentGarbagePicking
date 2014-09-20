@@ -437,25 +437,29 @@ public class TransportationAlgorithm {
 		for(int i = 0; i < this.valuesMatrix.length; i++) {
 			for(int j = 0; j < this.valuesMatrix[0].length; j++){
 				if(this.isBasic(i, j)){
-					if((!vCalculated[j]) && (!uCalculated[i])) continue;
 					
-					else if( (!vCalculated[j]) && (uCalculated[i])){
-						this.v[j] = this.costsMatrix[i][j] - this.u[i];
-						vCalculated[j] = true;
+					if( (i < vCalculated.length) && (i < uCalculated.length) &&
+						(j < vCalculated.length) && (j < uCalculated.length)) {
+						if((!vCalculated[j]) && (!uCalculated[i])) continue;
+						
+						else if( (!vCalculated[j]) && (uCalculated[i])){
+							this.v[j] = this.costsMatrix[i][j] - this.u[i];
+							vCalculated[j] = true;
+						}
+						else if((vCalculated[j]) && (!uCalculated[i])){
+							this.u[i] = this.costsMatrix[i][j] - this.v[j];
+							uCalculated[i] = true;
+						}
+						else if((!vCalculated[i]) && (uCalculated[j])){
+							this.v[i] = this.costsMatrix[i][j] - this.u[j];
+							vCalculated[i] = true;
+						}
+						else if((vCalculated[i]) && (!uCalculated[j])){
+							this.u[j] = this.costsMatrix[i][j] - this.v[i];
+							uCalculated[j] = true;
+						}
+						else continue;
 					}
-					else if((vCalculated[j]) && (!uCalculated[i])){
-						this.u[i] = this.costsMatrix[i][j] - this.v[j];
-						uCalculated[i] = true;
-					}
-					else if((!vCalculated[i]) && (uCalculated[j])){
-						this.v[i] = this.costsMatrix[i][j] - this.u[j];
-						vCalculated[i] = true;
-					}
-					else if((vCalculated[i]) && (!uCalculated[j])){
-						this.u[j] = this.costsMatrix[i][j] - this.v[i];
-						uCalculated[j] = true;
-					}
-					else continue;
 				}
 				else continue;
 			}
@@ -502,7 +506,7 @@ public class TransportationAlgorithm {
 	private boolean isOptimalSolution(double[] deltas){
 		boolean optimal = true;
 		for(int i = 0; i < deltas.length; i++){
-			if(deltas[i] <= 0){
+			if(deltas[i] < 0){
 				optimal = false;
 				break;
 			}
@@ -525,14 +529,30 @@ public class TransportationAlgorithm {
 		return minimum;
 	}
 	
+	/*
+	 * Counts the number of values that correspond to the minimum
+	 * delta found.
+	 */
+	private int countMinimumDeltasFound(double min, double[] deltas){
+		int counter = 0;
+		for(int i = 0; i < deltas.length; i++){
+			if(deltas[i] == min){
+				counter++;
+			}
+			else continue;
+		}
+		return counter;
+	}
+	
 	
 	/*
 	 * Builds a boolean matrix that in each position has a true value
 	 * if its value in valueMatrix corresponds to the lowest delta and a false value
 	 * if it doesn't.
 	 */
-	private boolean[][] buildBooleanDeltaMatrix(double delta){
+	private boolean[][] buildBooleanDeltaMatrix(double delta, int val){
 		boolean[][] booleanDeltaMatrix = new boolean[this.valuesMatrix.length][this.valuesMatrix[0].length];
+		int counter = 0;
 		
 		int nonBasicVariableCounter = 0;
 		for(int i = 0; i < this.valuesMatrix.length; i++){
@@ -552,9 +572,13 @@ public class TransportationAlgorithm {
 					deltas[deltaCounter] = this.costsMatrix[i][j] - this.u[i] - this.v[j];
 					
 					if( (deltas[deltaCounter] < 0) && (deltas[deltaCounter] == delta)){
-						booleanDeltaMatrix[i][j] = true;
-						stop = true;
-						break;
+						counter++;
+						if(counter == val) {
+							booleanDeltaMatrix[i][j] = true;
+							stop = true;
+							break;
+						}
+						else continue;
 					}
 					else booleanDeltaMatrix[i][j] = false;
 					
@@ -572,6 +596,93 @@ public class TransportationAlgorithm {
 	
 	
 	/*
+	 * Checks if a given matrix is balanced with 1 and -1.
+	 */
+	private boolean isMatrixBalanced(int[][] mat){
+		boolean balanced = true;
+		
+		int countInLine = 0;
+		int countInColumn = 0;
+		int numberOfOnes = 0;
+		int numberOfMinusOnes = 0;
+		int line = 0;
+
+		//checks line by line.
+		for(int i = 0; i < mat.length; i++){
+			numberOfOnes = 0;
+			numberOfMinusOnes = 0;
+			for(int j = 0; j < mat[i].length; j++){
+				if(mat[i][j] == 1){
+					numberOfOnes++;
+				}
+				else if(mat[i][j] == -1){
+					numberOfMinusOnes++;
+				}
+				else continue;
+			}
+			
+			if( ( (numberOfOnes == 1) && (numberOfMinusOnes == 1)) || 
+				  ( (numberOfOnes == 0) && (numberOfMinusOnes == 0) ) )
+				continue;
+			
+			else {
+				balanced = false;
+				return balanced;
+			}
+		}
+		
+		//checks column by column.
+		
+		for(int j = 0; j < mat[0].length; j++){
+			numberOfOnes = 0;
+			numberOfMinusOnes = 0;
+			for(int i = 0; i < mat.length; i++){
+				if(mat[i][j] == 1){
+					numberOfOnes++;
+				}
+				else if(mat[i][j] == -1){
+					numberOfMinusOnes++;
+				}
+				else continue;
+			}
+			
+			if( ( (numberOfOnes == 1) && (numberOfMinusOnes == 1)) || 
+					  ( (numberOfOnes == 0) && (numberOfMinusOnes == 0) ) )
+					continue;
+				
+			else {
+				balanced = false;
+				return balanced;
+			}
+		}
+	
+		
+		return balanced;
+	}
+	
+	
+	/*
+	 * Checks if 2 int matrices are equal.
+	 */
+	private boolean equalThetaMatrices(int[][] thetaOne, int[][] thetaTwo){
+		boolean equal = true;
+		
+		for(int i = 0; i < thetaOne.length; i++){
+			for(int j = 0; j < thetaOne[i].length; j++){
+				if(thetaOne[i][j] != thetaTwo[i][j]) {
+					equal = false;
+					break;
+				}
+			}
+			
+			if(equal == false) break;
+		}
+		
+		return equal;
+	}
+	
+	
+	/*
 	 * Builds a matrix of -1 and 1s called thetaMatrix. The -1 represents
 	 * the values that have -%theta to be calculated and the 1 represents
 	 * the values that have +%theta to be calculated. All the values that
@@ -581,211 +692,571 @@ public class TransportationAlgorithm {
 	private int[][] buildThetaMatrix(boolean[][] deltaMatrix){
 		int[][] thetaMatrix = new int[deltaMatrix.length][deltaMatrix[0].length];
 		
-		int indexColumn = -1;
-		int indexLine = -1;
+		//1st step.
+		thetaMatrix = this.placeFirstOne(thetaMatrix, deltaMatrix);
+		int line = this.retrieveFirstOneLine(thetaMatrix);
+		int column = this.retrieveFirstOneColumn(thetaMatrix);
+		int currentValue = 1;
+		
+		while(!this.isMatrixBalanced(thetaMatrix)){
+			
+			//copies thetaMatrix to the thetaMatrixCopy.
+			int[][] thetaMatrixCopy = new int[thetaMatrix.length][thetaMatrix[0].length];
+			for(int i = 0; i < thetaMatrix.length; i++){
+				for(int j = 0; j < thetaMatrix[i].length; j++){
+					thetaMatrixCopy[i][j] = thetaMatrix[i][j];
+				}
+			}
+			
+			thetaMatrix = this.addValueToLine(thetaMatrix, currentValue, line);
+			thetaMatrix = this.addValueToColumn(thetaMatrix, currentValue, column);
+			int previousLine = line;
+			int previousColumn = column;
+			column = this.getColumnOfAssignedValue(thetaMatrix, currentValue, previousLine);
+			line = this.getLineOfAssignedValue(thetaMatrix, currentValue, previousColumn);
+			
+			if(this.isBasic(line, column)){
+				thetaMatrix[line][column] = currentValue;
+			}
+			else currentValue = -1;
+			
+			boolean balanced = this.isMatrixBalanced(thetaMatrix);
+			if(balanced) break;
+			
+			if(this.equalThetaMatrices(thetaMatrix, thetaMatrixCopy)){
+				thetaMatrix = this.correctThetas(thetaMatrix);
+				break;
+			}
+		}
+		
+		return thetaMatrix;
+	}
+	
+	
+	/*
+	 * Last attempt to correct the thetasMatrix properly.
+	 */
+	private int[][] correctThetas(int[][] thetasMatrix){
+		
+		int maxIterations = 100;
+		int currentIteration = 0;
+		
+		int[][] newThetas = new int[thetasMatrix.length][thetasMatrix[0].length];
+		for(int i = 0; i < newThetas.length; i++){
+			for(int j = 0; j < newThetas[i].length; j++){
+				newThetas[i][j] = thetasMatrix[i][j];
+			}
+		}
+		
+		boolean corrected = this.isMatrixBalanced(newThetas);
+		
+		while(!(corrected) || (currentIteration <= maxIterations)) {
+			corrected = this.isMatrixBalanced(newThetas);
+			int minusOneCounter = 0;
+			int oneCounter = 0;
+			for(int i = 0; i < newThetas.length; i++){
+				minusOneCounter = 0;
+				oneCounter = 0;
+				for(int j = 0; j < newThetas[i].length; j++) {
+					if(newThetas[i][j] == 1) oneCounter++;
+					else if(newThetas[i][j] == -1) minusOneCounter++;
+					else continue;
+				}
+				
+				corrected = this.isMatrixBalanced(newThetas);
+				if(corrected) break;
+				
+				//if in this line theres one 1 and one -1, then it'll check on the columns of each if the rule applies.
+				if( ((oneCounter == 1) && (minusOneCounter == 1)) ||
+					 ((oneCounter == 0) && (minusOneCounter == 0))) {
+					
+					//first it checks which are the columns of each one of them.
+					int oneColumn = -1;
+					int minusOneColumn = -1;
+					for(int j = 0; j < newThetas[i].length; j++){
+						if(newThetas[i][j] == 1) oneColumn = j;
+						else if(newThetas[i][j] == -1) minusOneColumn = j;
+						else continue;
+					}
+					
+					if( (oneColumn != -1) && (minusOneColumn != -1) ) {
+						int oneColumnCounter = 0;
+						int minusOneColumnCounter = 0;
+						for(int j = 0; j < newThetas.length; j++){
+							if(newThetas[j][oneColumn] == -1){
+								minusOneColumnCounter++;
+							}
+							else if(newThetas[j][oneColumn] == 1){
+								oneColumnCounter++;
+							}
+							else continue;
+						}
+						
+						/*
+						 * Went through the columns, counted -1 and 1s there and
+						 * now it will go again through them, fixing the ones with
+						 * more than one 1 and more than one -1.
+						 */
+						if( (oneColumnCounter != 1) || (minusOneColumnCounter != 1)) {
+							
+							if(oneColumnCounter > 1){
+								for(int j = 0; j < newThetas.length; j++){
+									if(newThetas[j][oneColumn] == 1){
+										newThetas[j][oneColumn] = 0;
+										break;
+									}
+									else continue;
+								}
+								
+								if(minusOneColumnCounter < 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(this.isBasic(j, oneColumn)){
+											newThetas[j][oneColumn] = -1;
+											break;
+										}
+									}
+								}
+								
+								else if(minusOneColumnCounter > 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(newThetas[j][oneColumn] == -1){
+											newThetas[j][oneColumn] = 0;
+											break;
+										}
+										else continue;
+									}
+								}
+							}
+							
+							else if(oneColumnCounter < 1){
+								for(int j = 0; j < newThetas.length; j++){
+									if(this.isBasic(j, oneColumn)){
+										newThetas[j][oneColumn] = 1;
+										break;
+									}
+								}
+								
+								if(minusOneColumnCounter < 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(this.isBasic(j, oneColumn)){
+											newThetas[j][oneColumn] = -1;
+											break;
+										}
+									}
+								}
+								
+								else if(minusOneColumnCounter > 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(newThetas[j][oneColumn] == -1){
+											newThetas[j][oneColumn] = 0;
+											break;
+										}
+										else continue;
+									}
+								}
+							}
+						}
+						
+						//for the -1 found.
+						oneColumnCounter = 0;
+						minusOneColumnCounter = 0;
+						for(int j = 0; j < newThetas.length; j++){
+							if(newThetas[j][minusOneColumn] == -1){
+								minusOneColumnCounter++;
+							}
+							else if(newThetas[j][minusOneColumn] == 1){
+								oneColumnCounter++;
+							}
+							else continue;
+						}
+						
+						if( (oneColumnCounter != 1) || (minusOneColumnCounter != 1) ){
+							
+							if(oneColumnCounter > 1){
+								for(int j = 0; j < newThetas.length; j++){
+									if(newThetas[j][minusOneColumn] == 1){
+										newThetas[j][minusOneColumn] = 0;
+										break;
+									}
+									else continue;
+								}
+								
+								if(minusOneColumnCounter < 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(this.isBasic(j, minusOneColumn)){
+											newThetas[j][minusOneColumn] = -1;
+											break;
+										}
+									}
+								}
+								
+								else if(minusOneColumnCounter > 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(newThetas[j][minusOneColumn] == -1){
+											newThetas[j][minusOneColumn] = 0;
+											break;
+										}
+										else continue;
+									}
+								}
+							}
+							
+							else if(oneColumnCounter < 1){
+								for(int j = 0; j < newThetas.length; j++){
+									if(this.isBasic(j, minusOneColumn)){
+										newThetas[j][minusOneColumn] = 1;
+										break;
+									}
+								}
+								
+								if(minusOneColumnCounter < 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(this.isBasic(j, minusOneColumn)){
+											newThetas[j][minusOneColumn] = -1;
+											break;
+										}
+									}
+								}
+								
+								else if(minusOneColumnCounter > 1){
+									for(int j = 0; j < newThetas.length; j++){
+										if(newThetas[j][minusOneColumn] == -1){
+											newThetas[j][minusOneColumn] = 0;
+											break;
+										}
+										else continue;
+									}
+								}
+							}
+						}
+						
+					}
+				}
+				
+				//if the number of 1 and of -1 is not one, then...
+				else {
+					
+					if(oneCounter > 1){
+						int newOneCounter = 0;
+						for(int j = 0; j < newThetas[i].length; j++) {
+							if(newOneCounter > 1){
+								if(newThetas[i][j] == 1){
+									newThetas[i][j] = 0;
+									break;
+								}
+								else continue;
+							}
+							
+							if(newThetas[i][j] == 1){
+								newOneCounter++;
+							}
+							
+							if( (newThetas[i][j] == 1) && (newOneCounter > 1)){
+								newThetas[i][j] = 0;
+								break;
+							}
+							
+							else continue;
+						}
+					}
+					
+					else if(oneCounter < 1){
+						int newOneCounter = 0;
+						for(int j = 0; j < newThetas[i].length; j++) {
+							if(newOneCounter > 1){
+								if(newThetas[i][j] == 1){
+									newThetas[i][j] = 0;
+								}
+								else continue;
+							}
+							
+							if(newThetas[i][j] == 1){
+								newOneCounter++;
+							}
+							else if(!this.isBasic(i, j)){
+								newThetas[i][j] = 1;
+								newOneCounter++;
+								break;
+							}
+							else continue;
+						}
+					}
+					
+					if(minusOneCounter > 1){
+						int newMinusOneCounter = 0;
+						for(int j = 0; j < newThetas[i].length; j++) {
+							if(newMinusOneCounter > 1){
+								if(newThetas[i][j] == -1){
+									newThetas[i][j] = 0;
+								}
+								else continue;
+							}
+							
+							if(newThetas[i][j] == -1){
+								newMinusOneCounter++;
+							}
+							
+							if( (newThetas[i][j] == -1) && (newMinusOneCounter > 1)){
+								newThetas[i][j] = 0;
+								break;
+							}
+							
+							else continue;
+						}
+					}
+					
+					else if(minusOneCounter < 1){
+						int newMinusOneCounter = 0;
+						for(int j = 0; j < newThetas[i].length; j++) {
+							if(newMinusOneCounter > 1){
+								if(newThetas[i][j] == -1){
+									newThetas[i][j] = 0;
+								}
+								else continue;
+							}
+							
+							if(newThetas[i][j] == -1){
+								newMinusOneCounter++;
+							}
+							else if(this.isBasic(i, j)){
+								newThetas[i][j] = -1;
+								newMinusOneCounter++;
+								break;
+							}
+							else continue;
+						}
+					}
+				}
+			}
+			System.out.print("");
+			currentIteration++;
+			if(currentIteration > maxIterations){
+				break;
+			}
+			
+			corrected = this.isMatrixBalanced(newThetas);
+		}
+		
+		if(corrected){
+			return newThetas;
+		}
+		else {
+			newThetas = new int[thetasMatrix.length][thetasMatrix[0].length];
+			for(int i = 0; i < newThetas.length; i++){
+				for(int j = 0; j < newThetas[i].length; j++){
+					newThetas[i][j] = thetasMatrix[i][j];
+				}
+			}
+			return thetasMatrix;
+		}
+		
+		
+	}
+	
+	
+	/*
+	 * Perform first step (place a 1 where it's assigned true in the deltas
+	 * matrix) of the conversion from a boolean matrix to a numbered
+	 * theta matrix.
+	 */
+	private int[][] placeFirstOne(int[][] thetaMatrix, boolean[][] deltaMatrix){
 		for(int i = 0; i < deltaMatrix.length; i++){
 			for(int j = 0; j < deltaMatrix[i].length; j++){
 				if(deltaMatrix[i][j]){
 					thetaMatrix[i][j] = 1;
-					indexLine = i;
-					indexColumn = j;
 					break;
 				}
 			}
 		}
+		return thetaMatrix;
+	}
+	
+	
+	/*
+	 * Retrieves the line where the first One is.
+	 */
+	private int retrieveFirstOneLine(int[][] thetaMatrix){
+		int indexLine = -1;
 		
-		/*
-		 * Put -1 up or down that column
-		 */
-		
-		//if it's not on the first line.
-		if(indexLine != 0) {
-			
-			//if it's not on the last line
-			if(indexLine != thetaMatrix.length - 1){
-				if(this.isBasic(indexLine + 1, indexColumn)){
-					thetaMatrix[indexLine + 1][indexColumn] = -1;
+		for(int i = 0; i < thetaMatrix.length; i++){
+			for(int j = 0; j < thetaMatrix[i].length; j++){
+				if(thetaMatrix[i][j] == 1){
+					indexLine = i;
+					return indexLine;
 				}
-				else if(this.isBasic(indexLine-1, indexColumn)){
-					thetaMatrix[indexLine-1][indexColumn] = -1;
-				}
-				else {
-					for(int i = 1; i < thetaMatrix.length-1; i++){
-						if(this.isBasic(i, indexColumn)){
-							thetaMatrix[i][indexColumn] = -1;
-							break;
-						}
-						else continue;
-					}
-				}
-			}
-			
-			//if it is on the last line
-			else {
-				if(this.isBasic(indexLine-1, indexColumn)){
-					thetaMatrix[indexLine-1][indexColumn] = -1;
-				}
-				else {
-					for(int i = 1; i < thetaMatrix.length-1; i++){
-						if(this.isBasic(i, indexColumn)){
-							thetaMatrix[i][indexColumn] = -1;
-							break;
-						}
-						else continue;
-					}
-				}
+				else continue;
 			}
 		}
 		
-		//if it's on the first line.
-		else {
-			if(this.isBasic(indexLine+1, indexColumn)){
-				thetaMatrix[indexLine+1][indexColumn] = -1;
-			}
-			else {
-				for(int i = 1; i < thetaMatrix.length-1; i++){
-					if(this.isBasic(i, indexColumn)){
-						thetaMatrix[i][indexColumn] = -1;
-						break;
-					}
-					else continue;
+		return indexLine;
+	}
+	
+	/*
+	 * Retrieves the column where the first One is.
+	 */
+	private int retrieveFirstOneColumn(int[][] thetaMatrix){
+		int indexColumn = -1;
+		
+		for(int i = 0; i < thetaMatrix.length; i++){
+			for(int j = 0; j < thetaMatrix[i].length; j++){
+				if(thetaMatrix[i][j] == 1){
+					indexColumn = j;
+					return indexColumn;
 				}
+				else continue;
 			}
 		}
 		
-		/*
-		 * Put -1 on the right or left column to the one with the 1.
-		 */
-		int indexLineLastOne = -1;
-		int indexColumnLastOne = -1;
-		//if it's not on the first column.
-		if(indexColumn != 0){
-			
-			//if it's not on the last column
-			if(indexColumn != thetaMatrix[0].length-1){
-				if(this.isBasic(indexLine, indexColumn + 1)){
-					thetaMatrix[indexLine][indexColumn + 1] = -1;
-					indexLineLastOne = indexLine;
-					indexColumnLastOne = indexColumn+1;
-				}
-				
-				else if(this.isBasic(indexLine, indexColumn -1)){
-					thetaMatrix[indexLine][indexColumn - 1] = -1;
-					indexLineLastOne = indexLine;
-					indexColumnLastOne = indexColumn-1;
-				}
-				
-				else {
-					for(int i = 1; i < thetaMatrix[0].length-1; i++){
-						if(this.isBasic(indexLine, i)){
-							thetaMatrix[indexLine][i] = -1;
-							indexLineLastOne = indexLine;
-							indexColumnLastOne = i;
-							break;
-						}
-						else continue;
-					}
-				}
-			}
-			
-			//if it's on the last column.
-			else {
-				if(this.isBasic(indexLine, indexColumn-1)){
-					thetaMatrix[indexLine][indexColumn-1] = -1;
-					indexLineLastOne = indexLine;
-					indexColumnLastOne = indexColumn-1;
-				}
-				else {
-					for(int i = 1; i < thetaMatrix[0].length-1; i++){
-						if(this.isBasic(indexLine, i)){
-							thetaMatrix[indexLine][i] = -1;
-							indexLineLastOne = indexLine;
-							indexColumnLastOne = i;
-							break;
-						}
-						else continue;
-					}
-				}
-			}
-		}
+		return indexColumn;
+	}
+	
+	
+	/*
+	 * Add value to the thetasMatrix line.
+	 */
+	private int[][] addValueToLine(int[][] thetaMatrix, int value, int line){
 		
-		//if it's on the first column
-		else {
-			if(this.isBasic(indexLine, indexColumn+1)){
-				thetaMatrix[indexLine][indexColumn+1] = -1;
-				indexLineLastOne = indexLine;
-				indexColumnLastOne = indexColumn+1;
-			}
-			else {
-				for(int i = 2; i < thetaMatrix[0].length-1; i++){
-					if(this.isBasic(indexLine, i)){
-						thetaMatrix[indexLine][i] = -1;
-						indexLineLastOne = indexLine;
-						indexColumnLastOne = i;
-						break;
-					}
-					else continue;
-				}
-			}
-		}
+		int valueToAssign = 0;
+		if(value == 1) valueToAssign = -1;
+		else valueToAssign = 1;
 		
-		/*
-		 * Last one.
-		 */
-		if(indexLineLastOne != 0){
-			
-			//if it's not on the last line.
-			if(indexLineLastOne != thetaMatrix.length-1){
-				if(this.isBasic(indexLineLastOne-1, indexColumnLastOne)){
-					thetaMatrix[indexLineLastOne-1][indexColumnLastOne] = 1;
-				}
-				
-				else if(this.isBasic(indexLineLastOne+1, indexColumnLastOne)){
-					thetaMatrix[indexLineLastOne+1][indexColumnLastOne] = 1;
-				}
-				
-				else {
-					for(int i = 1; i < thetaMatrix.length; i++){
-						if(this.isBasic(i,indexColumnLastOne)){
-							thetaMatrix[i][indexColumnLastOne] = 1;
-							break;
-						}
-					}
+		for(int i = 0; i < thetaMatrix[line].length; i++){
+			if(valueToAssign == -1){
+				if(this.isBasic(line, i)){
+					thetaMatrix[line][i] = valueToAssign;
+					break;
 				}
 			}
-			
-			//if it's on the last line.
-			else {
-				if(this.isBasic(indexLineLastOne-1, indexColumnLastOne)){
-					thetaMatrix[indexLineLastOne-1][indexColumnLastOne] = 1;
-				}
-				else {
-					for(int i = 1; i < thetaMatrix.length-1; i++){
-						if(this.isBasic(i,indexColumnLastOne)){
-							thetaMatrix[i][indexColumnLastOne] = 1;
-							break;
-						}
-					}
-				}
+			else if(valueToAssign == 1){
+				thetaMatrix[line][i] = valueToAssign;
+				break;
 			}
+			else continue;
 		}
-		
-		else {
-			if(this.isBasic(indexLineLastOne+1, indexColumnLastOne)){
-				thetaMatrix[indexLineLastOne+1][indexColumnLastOne] = 1;
-			}
-			else {
-				for(int i = 1; i < thetaMatrix.length; i++){
-					if(this.isBasic(i,indexColumnLastOne)){
-						thetaMatrix[i][indexColumnLastOne] = 1;
-						break;
-					}
-				}
-			}
-		}
-		
 		
 		return thetaMatrix;
+	}
+	
+	
+	/*
+	 * Get column of assigned value.
+	 */
+	private int getColumnOfAssignedValue(int[][] thetaMatrix, int value, int line){
+		int column = -1;
+		
+		int valueToAssign = 0;
+		if(value == 1) valueToAssign = -1;
+		else valueToAssign = 1;
+		
+		for(int i = 0; i < thetaMatrix[line].length; i++){
+			if(thetaMatrix[line][i] == valueToAssign){
+				column = i;
+				break;
+			}
+			else continue;
+		}
+		
+		return column;
+	}
+	
+	/*
+	 * Add value to the thetasMatrix column.
+	 */
+	private int[][] addValueToColumn(int[][] thetaMatrix, int value, int column){
+		int valueToAssign = 0;
+		if(value == 1) valueToAssign = -1;
+		else valueToAssign = 1;
+		
+		for(int i = 0; i < thetaMatrix.length; i++){
+			if(this.isBasic(i, column)){
+				thetaMatrix[i][column] = valueToAssign;
+				break;
+			}
+		}
+		
+		return thetaMatrix;
+	}
+	
+	
+	/*
+	 * Get line of assigned value.
+	 */
+	private int getLineOfAssignedValue(int[][] thetaMatrix, int value, int column){
+		int newLine = -1;
+		
+		int valueToAssign = 0;
+		if(value == 1) valueToAssign = -1;
+		else valueToAssign = 1;
+		
+		for(int i = 0; i < thetaMatrix.length; i++){
+			if(thetaMatrix[i][column] == valueToAssign){
+				newLine = i;
+				break;
+			}
+			else continue;
+		}
+		
+		return newLine;
+	}
+	
+	
+	/*
+	 * Compute minimum of thetas.
+	 */
+	private double computeMinimumOfThetas(int[][] thetas){
+		double min = 100000;
+		
+		for(int i = 0; i < thetas.length; i++){
+			for(int j = 0; j < thetas[i].length; j++) {
+				if(thetas[i][j] == -1){
+					if( (this.isBasic(i, j)) && (this.valuesMatrix[i][j] < min)){
+						min = this.valuesMatrix[i][j];
+					}
+				}
+				else continue;
+			}
+		}
+		
+		return min;
+	}
+	
+	
+	/*
+	 * Computes next step of values.
+	 */
+	private void improveSolution(int[][] thetas, double min){
+		for(int i = 0; i < thetas.length; i++) {
+			for(int j = 0; j < thetas[i].length; j++) {
+				if(thetas[i][j] == 1){
+					this.valuesMatrix[i][j] += min;
+				}
+				else if(thetas[i][j] == -1){
+					this.valuesMatrix[i][j] -= min;
+				}
+			}
+		}
+	}
+	
+	
+	/*
+	 * Checks if all values in the valuesMatrix are equal or higher than 0.
+	 */
+	private boolean areAllValuesNonNegative(){
+		boolean allNonNegative = true;
+		
+		for(int i = 0; i < this.valuesMatrix.length; i++) {
+			for(int j = 0; j < this.valuesMatrix[i].length; j++){
+				if(valuesMatrix[i][j] < 0){
+					allNonNegative = false;
+					break;
+				}
+			}
+			
+			if(allNonNegative == false)
+				break;
+		}
+		
+		return allNonNegative;
 	}
 	
 	
@@ -911,6 +1382,25 @@ public class TransportationAlgorithm {
 		System.out.println(debugPrinter);
 	}
 	
+	/*
+	 * Print thetaMatrix.
+	 */
+	public void printThetaMatrix(int[][] thetaMatrix){
+		System.out.println("\nTHETA MATRIX: ");
+		String debugPrinter = "";
+		
+		for(int i = 0; i < thetaMatrix.length; i++){
+			debugPrinter += "[ ";
+			for(int j = 0; j < thetaMatrix[i].length; j++) {
+				if(j == thetaMatrix[i].length - 1) 
+					debugPrinter += thetaMatrix[i][j];
+				else debugPrinter += thetaMatrix[i][j] + ", ";
+			}
+			debugPrinter += " ]\n";
+		}
+		System.out.println(debugPrinter);
+	}
+	
 	
 	/*
 	 * Print Iteration Header.
@@ -944,12 +1434,19 @@ public class TransportationAlgorithm {
 			double[] deltas = this.computeDeltas();
 			this.printDeltas(deltas);
 			
-			boolean[][] booleanDeltas = this.buildBooleanDeltaMatrix(this.getMinimumDelta(deltas));
-			int[][] thetasMatrix = this.buildThetaMatrix(booleanDeltas);
+			if(this.isOptimalSolution(deltas)){
+				break;
+			}
 			
+			boolean[][] booleanDeltas = this.buildBooleanDeltaMatrix(this.getMinimumDelta(deltas), 1);
+			int[][] thetasMatrix = this.buildThetaMatrix(booleanDeltas);
+			double minimum = this.computeMinimumOfThetas(thetasMatrix);
+			this.improveSolution(thetasMatrix, minimum);
+			this.printThetaMatrix(thetasMatrix);
 			optimal = this.isOptimalSolution(deltas);
 			iteration++;
 		}
+				
 	}
 	
 }
