@@ -529,21 +529,6 @@ public class TransportationAlgorithm {
 		return minimum;
 	}
 	
-	/*
-	 * Counts the number of values that correspond to the minimum
-	 * delta found.
-	 */
-	private int countMinimumDeltasFound(double min, double[] deltas){
-		int counter = 0;
-		for(int i = 0; i < deltas.length; i++){
-			if(deltas[i] == min){
-				counter++;
-			}
-			else continue;
-		}
-		return counter;
-	}
-	
 	
 	/*
 	 * Builds a boolean matrix that in each position has a true value
@@ -601,11 +586,8 @@ public class TransportationAlgorithm {
 	private boolean isMatrixBalanced(int[][] mat){
 		boolean balanced = true;
 		
-		int countInLine = 0;
-		int countInColumn = 0;
 		int numberOfOnes = 0;
 		int numberOfMinusOnes = 0;
-		int line = 0;
 
 		//checks line by line.
 		for(int i = 0; i < mat.length; i++){
@@ -1235,28 +1217,6 @@ public class TransportationAlgorithm {
 				}
 			}
 		}
-	}
-	
-	
-	/*
-	 * Checks if all values in the valuesMatrix are equal or higher than 0.
-	 */
-	private boolean areAllValuesNonNegative(){
-		boolean allNonNegative = true;
-		
-		for(int i = 0; i < this.valuesMatrix.length; i++) {
-			for(int j = 0; j < this.valuesMatrix[i].length; j++){
-				if(valuesMatrix[i][j] < 0){
-					allNonNegative = false;
-					break;
-				}
-			}
-			
-			if(allNonNegative == false)
-				break;
-		}
-		
-		return allNonNegative;
 	}
 	
 	
