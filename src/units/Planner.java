@@ -1,4 +1,4 @@
-package agent;
+package units;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,6 +11,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import agent.TruckAgent;
 import ai.TransportationAlgorithm;
 import map.CityMap;
 import map.GarbageContainer;
@@ -23,7 +24,7 @@ public class Planner{
 	private CityMap map;
 	private List<Truck> trucks;
 	private List<TransportationAlgorithm> transportPlan;
-	private List<TruckAgent> truckAgents;
+	private List<String> truckAgents;
 	
 	public CityMap getMap() {
 		return map;
@@ -64,11 +65,11 @@ public class Planner{
 	 */
 	
 	
-	public List<TruckAgent> getTruckAgents() {
+	public List<String> getTruckAgents() {
 		return truckAgents;
 	}
 
-	public void setTruckAgents(List<TruckAgent> truckAgents) {
+	public void setTruckAgents(List<String> truckAgents) {
 		this.truckAgents = truckAgents;
 	}
 
@@ -165,6 +166,7 @@ public class Planner{
 		this.map = map;
 		this.trucks = trucks;
 		this.transportPlan = new ArrayList<TransportationAlgorithm>();
+		this.truckAgents = new ArrayList<String>();
 		
 		List<GarbageContainer> garbageContainers = new ArrayList<GarbageContainer>();
 		garbageContainers = this.map.getGarbageContainers();

@@ -11,8 +11,8 @@ import map.CityMap;
 
 import org.xml.sax.SAXException;
 
-import agent.Planner;
-import agent.Truck;
+import units.Planner;
+import units.Truck;
 
 public class AgentPlannerExample {
 	public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException, TransformerException  {

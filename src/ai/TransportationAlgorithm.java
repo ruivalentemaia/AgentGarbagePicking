@@ -15,8 +15,8 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
+import units.Truck;
 import map.GarbageContainer;
-import agent.Truck;
 
 public class TransportationAlgorithm {
 	private int id;

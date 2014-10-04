@@ -34,9 +34,9 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import agent.Planner;
+import units.Planner;
+import units.Truck;
 import agent.PlannerAgent;
-import agent.Truck;
 import ai.Options;
 
 public class ConsoleInterface {
@@ -579,6 +579,25 @@ public class ConsoleInterface {
 			Runtime rt = Runtime.instance();
 			AgentContainer ac = rt.createMainContainer(p);
 			
+			//adds all Trucks to the AgentContainer
+			List<String> truckAgents = new ArrayList<String>();
+			itTruck = this.trucks.iterator();
+			while(itTruck.hasNext()){
+				Truck t = itTruck.next();
+				try {
+					Object[] args = new Object[1];
+					args[0] = t;
+					AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+					aController.start();
+					truckAgents.add(aController.getName());
+				} catch (StaleProxyException e) {
+					System.err.println("Error launching " + agent.TruckAgent.class.getName());
+				}
+			}
+			
+			//adds TruckAgents to the Planner object.
+			planner.setTruckAgents(truckAgents);
+			
 			//adds PlannerAgent to the AgentContainer
 			try {
 				Object[] args = new Object[1];
@@ -588,21 +607,6 @@ public class ConsoleInterface {
 			} catch(jade.wrapper.StaleProxyException e) {
 				System.err.println("Error launching " + planner.getClass().getName());
 			}
-			
-			//adds all Trucks to the AgentContainer
-			itTruck = this.trucks.iterator();
-			while(itTruck.hasNext()){
-				Truck t = itTruck.next();
-				try {
-					Object[] args = new Object[1];
-					args[0] = t;
-					AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
-					aController.start();
-				} catch (StaleProxyException e) {
-					System.err.println("Error launching " + agent.TruckAgent.class.getName());
-				}
-			}
-			
 		}
 		else return;
 	}

@@ -1,5 +1,6 @@
 package agent;
 
+import units.Truck;
 import jade.core.Agent;
 import jade.core.behaviours.SimpleBehaviour;
 import jade.lang.acl.ACLMessage;
@@ -26,22 +27,6 @@ public class TruckAgent extends Agent{
 		addBehaviour(new readyBehaviour(this));
 	}
 	
-	/*
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 		MESSAGES
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 */
 	class readyBehaviour extends SimpleBehaviour {
 		private static final long serialVersionUID = 752338739127971004L;
 		private boolean finished = false;
@@ -61,8 +46,7 @@ public class TruckAgent extends Agent{
 			
 			ACLMessage msg = receive(m12_and_m3);
 			if(msg != null){
-				System.out.println("Truck " + this.getAgent().getName() + ": Received the " + msg.getContent() + " from " + msg.getSender().getName() + ".");
-				
+				System.out.println("Truck " + this.getAgent().getLocalName() + ": Received the " + msg.getContent() + " from " + msg.getSender().getLocalName() + ".");
 			}
 		}
 

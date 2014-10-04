@@ -7,7 +7,7 @@ import javax.xml.transform.TransformerException;
 
 import org.xml.sax.SAXException;
 
-import agent.Truck;
+import units.Truck;
 import ai.GreedyPathSearch;
 import map.CityMap;
 import map.Point;

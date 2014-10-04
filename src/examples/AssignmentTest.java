@@ -12,7 +12,7 @@ import map.GarbageContainer;
 
 import org.xml.sax.SAXException;
 
-import agent.Truck;
+import units.Truck;
 import ai.TransportationAlgorithm;
 
 public class AssignmentTest {
