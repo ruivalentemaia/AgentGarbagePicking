@@ -44,7 +44,9 @@ public class CityMap {
 	private List<Truck> trucks;
 	
 	//XML file attributes
-	private String filePath = System.getProperty("user.dir") + "/maps";
+	private String mapsFilePath = System.getProperty("user.dir") + "/config/maps";
+	private String trucksFilePath = System.getProperty("user.dir") + "/config/trucks";
+	
 	
 	//Comparators to order Crossroads
 	static private Comparator<Crossroads> orderCrossroadsWidthDesc;
@@ -174,11 +176,19 @@ public class CityMap {
 	}
 
 	public String getFilePath() {
-		return filePath;
+		return mapsFilePath;
 	}
 
 	public void setFilePath(String filePath) {
-		this.filePath = filePath;
+		this.mapsFilePath = filePath;
+	}
+
+	public String getTrucksFilePath() {
+		return trucksFilePath;
+	}
+
+	public void setTrucksFilePath(String trucksFilePath) {
+		this.trucksFilePath = trucksFilePath;
 	}
 
 	public Options getOptions() {
@@ -1495,7 +1505,7 @@ public class CityMap {
 		}
 		rootElement.appendChild(garbageContainersSet);
 		
-		File f = new File(System.getProperty("user.dir") + "/maps");
+		File f = new File(this.mapsFilePath);
 		f.setExecutable(true);
 		f.setReadable(true);
 		f.setWritable(true);
@@ -1522,7 +1532,7 @@ public class CityMap {
 		this.garbageContainers = new ArrayList<GarbageContainer>();
 		this.trucks = new ArrayList<Truck>();
 		
-		File fXmlFile = new File(this.filePath + "/" + filename);
+		File fXmlFile = new File(this.mapsFilePath + "/" + filename);
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 		Document doc = dBuilder.parse(fXmlFile);

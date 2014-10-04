@@ -399,7 +399,6 @@ public class TransportationAlgorithm {
 				}
 			}
 		}
-		//TODO: the rest of the Degeneracy check.
 	}
 	
 	
@@ -1221,6 +1220,57 @@ public class TransportationAlgorithm {
 	
 	
 	/*
+	 * Performs the Transportation algorithm.
+	 */
+	public void performTransportationAlgorithm() {
+		this.initialize();
+		this.northwestCornerRule();
+		if(this.checkDegeneracy()){
+			this.correctDegeneracy();
+		}
+		boolean optimal = false;
+		int iteration = 1;
+		
+		while(!optimal){
+			
+			this.printHeader(iteration);
+			this.printSupplyValues();
+			this.printDemandValues();
+			this.printCostsMatrix();
+			this.printValuesMatrix();
+			
+			this.computeUsAndVs();
+			double[] deltas = this.computeDeltas();
+			this.printDeltas(deltas);
+			
+			if(this.isOptimalSolution(deltas)){
+				break;
+			}
+			
+			boolean[][] booleanDeltas = this.buildBooleanDeltaMatrix(this.getMinimumDelta(deltas), 1);
+			int[][] thetasMatrix = this.buildThetaMatrix(booleanDeltas);
+			double minimum = this.computeMinimumOfThetas(thetasMatrix);
+			this.improveSolution(thetasMatrix, minimum);
+			this.printThetaMatrix(thetasMatrix);
+			optimal = this.isOptimalSolution(deltas);
+			iteration++;
+		}
+				
+	}
+	
+	
+	/**
+	 * 
+	 * 
+	 * 
+	 * 	PRINTING FUNCTIONS
+	 * 
+	 * 
+	 * 
+	 */
+	
+	
+	/*
 	 * Prints the costsMatrix.
 	 */
 	public void printCostsMatrix() {
@@ -1367,46 +1417,6 @@ public class TransportationAlgorithm {
 	 */
 	public void printHeader(int it){
 		System.out.println("\n--------------------------\t\t ITERATION " + it + " \t\t--------------------------");
-	}
-	
-	
-	/*
-	 * Performs the Transportation algorithm.
-	 */
-	public void performTransportationAlgorithm() {
-		this.initialize();
-		this.northwestCornerRule();
-		if(this.checkDegeneracy()){
-			this.correctDegeneracy();
-		}
-		boolean optimal = false;
-		int iteration = 1;
-		
-		while(!optimal){
-			
-			this.printHeader(iteration);
-			this.printSupplyValues();
-			this.printDemandValues();
-			this.printCostsMatrix();
-			this.printValuesMatrix();
-			
-			this.computeUsAndVs();
-			double[] deltas = this.computeDeltas();
-			this.printDeltas(deltas);
-			
-			if(this.isOptimalSolution(deltas)){
-				break;
-			}
-			
-			boolean[][] booleanDeltas = this.buildBooleanDeltaMatrix(this.getMinimumDelta(deltas), 1);
-			int[][] thetasMatrix = this.buildThetaMatrix(booleanDeltas);
-			double minimum = this.computeMinimumOfThetas(thetasMatrix);
-			this.improveSolution(thetasMatrix, minimum);
-			this.printThetaMatrix(thetasMatrix);
-			optimal = this.isOptimalSolution(deltas);
-			iteration++;
-		}
-				
 	}
 	
 }

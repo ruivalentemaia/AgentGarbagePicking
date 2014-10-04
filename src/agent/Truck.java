@@ -20,7 +20,8 @@ import map.Road;
 import jade.core.Agent;
 
 public class Truck extends Agent {
-	private static final long serialVersionUID = 1L;
+	
+	private static final long serialVersionUID = 6805911409426448725L;
 	
 	private int id;
 	private String truckName;
