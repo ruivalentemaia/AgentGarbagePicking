@@ -1,5 +1,6 @@
 package agent;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -9,8 +10,13 @@ import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 import ai.GreedyPathSearch;
 import ai.Goal;
+import ai.Options;
 import ai.Path;
 import map.CityMap;
 import map.Crossroads;
@@ -18,10 +24,11 @@ import map.GarbageContainer;
 import map.Point;
 import map.Road;
 import jade.core.Agent;
+import jade.core.behaviours.SimpleBehaviour;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 
-public class Truck extends Agent {
-	
-	private static final long serialVersionUID = 6805911409426448725L;
+public class Truck {
 	
 	private int id;
 	private String truckName;
@@ -38,9 +45,10 @@ public class Truck extends Agent {
 	//complete list of the CityMap points
 	private CityMap completeCityMap;
 	
+	private Options options;
+	
 	//Comparators for arrays.
 	static private Comparator<Goal> orderId;
-	
 	
 	static {
 		orderId = new Comparator<Goal>() {
@@ -585,7 +593,8 @@ public class Truck extends Agent {
 				}
 				
 				else if(gc.getCurrentOccupation() < this.getMaxCapacity()) {
-					System.out.println("TRUCK can go to the next Goal !");
+					if(this.options.isActiveConsolePrinting())
+						System.out.println("TRUCK can go to the next Goal !");
 				}
 			}
 		}
@@ -652,7 +661,10 @@ public class Truck extends Agent {
 			
 			if( (bestNode.getX() == greedy.getGoal().getEndPoint().getX()) &&
 				(bestNode.getY() == greedy.getGoal().getEndPoint().getY()) ) {
-				System.out.println("Path Planning complete for Goal " + g.getId() + " of Truck " + this.getTruckName() + " complete.");
+				
+				if(this.options.isActiveConsolePrinting())
+					System.out.println("Path Planning complete for Goal " + g.getId() + " of Truck " + this.getTruckName() + " complete.");
+				
 				this.currentPosition = bestNode;
 				this.pathToBeWalked.add(this.currentPosition);
 				break;
@@ -762,12 +774,17 @@ public class Truck extends Agent {
 		Iterator<Goal> itGoal = this.goals.iterator();
 		Goal[] goalsTemp = new Goal[this.goals.size()];
 		int counter = 0;
-		System.out.println("\n");
+		
+		if(this.options.isActiveConsolePrinting())
+			System.out.println("\n");
+		
 		while(itGoal.hasNext()){
 			Goal g = itGoal.next();
 			goalsTemp[counter] = g;
 			counter++;
-			System.out.println("Goal " + g.getId() + " = (" + g.getEndPoint().getX() + ", " + g.getEndPoint().getY() + ")");
+			
+			if(this.options.isActiveConsolePrinting())
+				System.out.println("Goal " + g.getId() + " = (" + g.getEndPoint().getX() + ", " + g.getEndPoint().getY() + ")");
 		}
 		
 		this.orderGoalById(goalsTemp);
@@ -811,9 +828,10 @@ public class Truck extends Agent {
 		this.buildGoalsList();
 		this.buildTotalPathPlanning();
 		
-		this.printPathToBeWalked();
+		if(this.options.isActiveConsolePrinting())
+			this.printPathToBeWalked();
 	}
-	
+
 	
 	/**
 	 * 
@@ -821,6 +839,9 @@ public class Truck extends Agent {
 	 * 
 	 *
 	 * 	CONSTRUCTOR.
+	 * @throws IOException 
+	 * @throws SAXException 
+	 * @throws ParserConfigurationException 
 	 *
 	 * 
 	 * 
@@ -831,7 +852,7 @@ public class Truck extends Agent {
 	/*
 	 * Constructor with 3 arguments (ID, truckName and startingPoint).
 	 */
-	public Truck(int ID, String n, String gT){
+	public Truck(int ID, String n, String gT) throws ParserConfigurationException, SAXException, IOException{
 		this.id = ID;
 		
 		if(!n.equals(""))
@@ -849,6 +870,9 @@ public class Truck extends Agent {
 		this.goals = new ArrayList<Goal>();
 		
 		this.garbageContainersToGoTo = new ArrayList<GarbageContainer>();
+		
+		this.options = new Options();
+		this.options.importOptions("options.xml");
 	}
 
 }

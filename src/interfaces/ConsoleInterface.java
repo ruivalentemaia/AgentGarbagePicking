@@ -1,9 +1,14 @@
 package interfaces;
 
-import java.awt.AWTException;
-import java.awt.Robot;
-import java.awt.event.KeyEvent;
-import java.io.Console;
+import jade.core.Agent;
+import jade.core.Profile;
+import jade.core.ProfileImpl;
+import jade.core.Runtime;
+import jade.wrapper.AgentContainer;
+import jade.wrapper.AgentController;
+import jade.wrapper.ControllerException;
+import jade.wrapper.StaleProxyException;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,13 +16,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -31,6 +34,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import agent.Planner;
+import agent.PlannerAgent;
 import agent.Truck;
 import ai.Options;
 
@@ -210,8 +215,11 @@ public class ConsoleInterface {
 	/**
 	 * 
 	 * @return
+	 * @throws IOException 
+	 * @throws SAXException 
+	 * @throws ParserConfigurationException 
 	 */
-	private Truck buildAddTruck(){
+	private Truck buildAddTruck() throws ParserConfigurationException, SAXException, IOException{
 		
 		int lastId = -1;
 		if(this.trucks.size() > 0) lastId = this.trucks.size() + 1;
@@ -307,7 +315,7 @@ public class ConsoleInterface {
 			truckInfo = "Information of the selected Truck: ";
 			truckInfo += "\n\n";
 			truckInfo += "\n1) Id = " + toEdit.getId();
-			truckInfo += "\n2) Name = " + toEdit.getName();
+			truckInfo += "\n2) Name = " + toEdit.getTruckName();
 			truckInfo += "\n3) Garbage Type = " + toEdit.getGarbageType();
 			truckInfo += "\n4) Max. Capacity = " + toEdit.getMaxCapacity();
 			truckInfo += "\n\n";
@@ -336,7 +344,7 @@ public class ConsoleInterface {
 				case 2:
 					truckInfo += "\n\n\nEdit Truck name: ";
 					truckInfo += "\n\n";
-					truckInfo += "\nPrevious Name: " + toEdit.getName();
+					truckInfo += "\nPrevious Name: " + toEdit.getTruckName();
 					truckInfo += "\nNew Name: ";
 					System.out.println(truckInfo);
 					Scanner in2 = new Scanner(System.in);
@@ -499,8 +507,15 @@ public class ConsoleInterface {
         return false;
     }
 	
-	
-	private boolean generateCityMap() throws ParserConfigurationException, TransformerException, IOException {
+	/**
+	 * 
+	 * @return
+	 * @throws ParserConfigurationException
+	 * @throws TransformerException
+	 * @throws IOException
+	 * @throws SAXException 
+	 */
+	private boolean generateCityMap() throws ParserConfigurationException, TransformerException, IOException, SAXException {
 		boolean done = false;
 		String cText = "";
 		cText += "\n\nGenerate a new City Map. Insert width and height:";
@@ -541,6 +556,55 @@ public class ConsoleInterface {
 		}
 		
 		return done;
+	}
+	
+	
+	private void start() throws ParserConfigurationException, SAXException, IOException, ControllerException {
+		if( (this.trucks.size() > 0) && (this.map != null) ) {
+			
+			this.map.printCityMapString();
+			
+			Iterator<Truck> itTruck = this.trucks.iterator();
+			while(itTruck.hasNext()){
+				Truck t = itTruck.next();
+				t.prepare(this.map);
+				this.map.getTrucks().add(t);
+			}
+			
+			Planner planner = new Planner(this.map, this.trucks);
+			
+			//creates JADE AgentContainer.
+			Profile p = new ProfileImpl();
+			p.setParameter(Profile.MAIN_PORT, "8888");
+			Runtime rt = Runtime.instance();
+			AgentContainer ac = rt.createMainContainer(p);
+			
+			//adds PlannerAgent to the AgentContainer
+			try {
+				Object[] args = new Object[1];
+				args[0] = planner;
+				AgentController aController = ac.createNewAgent("planner", agent.PlannerAgent.class.getName(), args);
+				aController.start();
+			} catch(jade.wrapper.StaleProxyException e) {
+				System.err.println("Error launching " + planner.getClass().getName());
+			}
+			
+			//adds all Trucks to the AgentContainer
+			itTruck = this.trucks.iterator();
+			while(itTruck.hasNext()){
+				Truck t = itTruck.next();
+				try {
+					Object[] args = new Object[1];
+					args[0] = t;
+					AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+					aController.start();
+				} catch (StaleProxyException e) {
+					System.err.println("Error launching " + agent.TruckAgent.class.getName());
+				}
+			}
+			
+		}
+		else return;
 	}
 	
 	
@@ -607,8 +671,9 @@ public class ConsoleInterface {
 	 * @throws IOException
 	 * @throws ParserConfigurationException
 	 * @throws TransformerException
+	 * @throws SAXException 
 	 */
-	private boolean treatConfigureTruckSubMenu(char input) throws IOException, ParserConfigurationException, TransformerException {
+	private boolean treatConfigureTruckSubMenu(char input) throws IOException, ParserConfigurationException, TransformerException, SAXException {
 		boolean done = false;
 		
 		switch(input){
@@ -690,14 +755,15 @@ public class ConsoleInterface {
 	 * @throws ParserConfigurationException
 	 * @throws SAXException
 	 * @throws TransformerException
+	 * @throws ControllerException 
 	 */
-	private int treatMainMenuSelectedOption(int mainMenuOption) throws IOException, ParserConfigurationException, SAXException, TransformerException{
+	private int treatMainMenuSelectedOption(int mainMenuOption) throws IOException, ParserConfigurationException, SAXException, TransformerException, ControllerException{
 			switch(mainMenuOption){
 			
 			//start
 			case 1:
 				this.lastOption = '1';
-				mainMenuOption = 5;
+				this.start();
 				break;
 		
 			//choose the CityMap
@@ -732,7 +798,6 @@ public class ConsoleInterface {
 			//other input
 			default:
 				this.lastOption = Integer.toString(mainMenuOption).charAt(0);
-				Runtime.getRuntime().exec("clear");
 				System.out.println("\n\nPlease select a valid option.");
 				mainMenuOption = 5;
 				break;
@@ -858,8 +923,9 @@ public class ConsoleInterface {
 	 * @throws ParserConfigurationException
 	 * @throws TransformerException
 	 * @throws SAXException
+	 * @throws ControllerException 
 	 */
-	public ConsoleInterface() throws IOException, ParserConfigurationException, TransformerException, SAXException {
+	public ConsoleInterface() throws IOException, ParserConfigurationException, TransformerException, SAXException, ControllerException {
 		Options options = new Options();
 		options.export("options.xml");
 		

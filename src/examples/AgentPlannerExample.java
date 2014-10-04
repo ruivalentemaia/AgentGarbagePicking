@@ -11,7 +11,7 @@ import map.CityMap;
 
 import org.xml.sax.SAXException;
 
-import agent.PlannerAgent;
+import agent.Planner;
 import agent.Truck;
 
 public class AgentPlannerExample {
@@ -51,6 +51,6 @@ public class AgentPlannerExample {
 		trucks.add(t6);
 		map.getTrucks().add(t6);
 		
-		PlannerAgent planner = new PlannerAgent(map, trucks);
+		Planner planner = new Planner(map, trucks);
 	}
 }

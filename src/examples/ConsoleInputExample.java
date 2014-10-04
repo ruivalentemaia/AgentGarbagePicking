@@ -1,5 +1,7 @@
 package examples;
 
+import jade.wrapper.ControllerException;
+
 import java.awt.AWTException;
 import java.io.IOException;
 
@@ -11,7 +13,7 @@ import org.xml.sax.SAXException;
 import interfaces.ConsoleInterface;
 
 public class ConsoleInputExample {
-	public static void main(String[] args) throws IOException, ParserConfigurationException, TransformerException, SAXException {
+	public static void main(String[] args) throws IOException, ParserConfigurationException, TransformerException, SAXException, ControllerException {
 		ConsoleInterface consoleMenu = new ConsoleInterface();
 	}
 }

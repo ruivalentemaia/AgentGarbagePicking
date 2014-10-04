@@ -5,10 +5,12 @@ import java.io.IOException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
+import org.xml.sax.SAXException;
+
 import map.CityMap;
 
 public class MapExportExample {
-	public static void main(String[] args)  {
+	public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException  {
 		CityMap map = new CityMap(40, 80, 30, 50);
 		map.printCityMapString();
 		try {

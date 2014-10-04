@@ -1,5 +1,6 @@
 package ai;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -9,6 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
 
 import map.GarbageContainer;
 import agent.Truck;
@@ -28,6 +33,8 @@ public class TransportationAlgorithm {
 	private double totalSupply;
 	private double[] u;
 	private double[] v;
+	
+	private Options options;
 	
 	public int getId() {
 		return id;
@@ -130,16 +137,22 @@ public class TransportationAlgorithm {
 	 * 
 	 * 
 	 * CONSTRUCTOR.
+	 * @throws IOException 
+	 * @throws SAXException 
+	 * @throws ParserConfigurationException 
 	 * 
 	 * 
 	 */
 	
-	public TransportationAlgorithm(List<Truck> ts, List<GarbageContainer> gc) {
+	public TransportationAlgorithm(List<Truck> ts, List<GarbageContainer> gc) throws ParserConfigurationException, SAXException, IOException {
 		this.trucks = new ArrayList<Truck>();
 		this.trucks = ts;
 		this.garbageContainers = new ArrayList<GarbageContainer>();
 		this.garbageContainers = gc;
 		this.assignments = new LinkedHashMap<Truck, Goal>();
+		
+		this.options = new Options();
+		this.options.importOptions("options.xml");
 	}
 	
 	
@@ -201,8 +214,10 @@ public class TransportationAlgorithm {
 		 */
 		if(this.totalSupply == this.totalDemand){
 			
-			System.out.println("\n Total Supply: " + this.totalSupply);
-			System.out.println(" Total Demand: " + this.totalDemand);
+			if(options.isActiveConsolePrinting()) {
+				System.out.println("\n Total Supply: " + this.totalSupply);
+				System.out.println(" Total Demand: " + this.totalDemand);
+			}
 			
 			this.costsMatrix = new double[nAgents][nGarbageContainers];
 			itTruck = this.trucks.iterator();
@@ -225,8 +240,10 @@ public class TransportationAlgorithm {
 		//artificial row with unitary costs equal to 0.
 		else if(this.totalDemand > this.totalSupply){
 			
-			System.out.println("\n Total Supply: " + this.totalSupply);
-			System.out.println(" Total Demand: " + this.totalDemand);
+			if(options.isActiveConsolePrinting()) {
+				System.out.println("\n Total Supply: " + this.totalSupply);
+				System.out.println(" Total Demand: " + this.totalDemand);
+			}
 			
 			int numberNecessarySteps = 0;
 			while(!(this.totalDemand == this.totalSupply)) {
@@ -274,8 +291,10 @@ public class TransportationAlgorithm {
 		//artificial column with unitary costs equal to 0.
 		else {
 			
-			System.out.println("\n Total Supply: " + this.totalSupply);
-			System.out.println(" Total Demand: " + this.totalDemand);
+			if(options.isActiveConsolePrinting()) {
+				System.out.println("\n Total Supply: " + this.totalSupply);
+				System.out.println(" Total Demand: " + this.totalDemand);
+			}
 			
 			int numberNecessarySteps = 0;
 			while(!(this.totalDemand == this.totalSupply)) {
@@ -465,8 +484,10 @@ public class TransportationAlgorithm {
 			
 		}
 		
-		this.printUs();
-		this.printVs();
+		if(options.isActiveConsolePrinting()){
+			this.printUs();
+			this.printVs();
+		}
 	}
 	
 	
@@ -1232,16 +1253,19 @@ public class TransportationAlgorithm {
 		int iteration = 1;
 		
 		while(!optimal){
-			
-			this.printHeader(iteration);
-			this.printSupplyValues();
-			this.printDemandValues();
-			this.printCostsMatrix();
-			this.printValuesMatrix();
+			if(this.options.isActiveConsolePrinting()) {
+				this.printHeader(iteration);
+				this.printSupplyValues();
+				this.printDemandValues();
+				this.printCostsMatrix();
+				this.printValuesMatrix();
+			}
 			
 			this.computeUsAndVs();
 			double[] deltas = this.computeDeltas();
-			this.printDeltas(deltas);
+			
+			if(this.options.isActiveConsolePrinting())
+				this.printDeltas(deltas);
 			
 			if(this.isOptimalSolution(deltas)){
 				break;
@@ -1251,7 +1275,10 @@ public class TransportationAlgorithm {
 			int[][] thetasMatrix = this.buildThetaMatrix(booleanDeltas);
 			double minimum = this.computeMinimumOfThetas(thetasMatrix);
 			this.improveSolution(thetasMatrix, minimum);
-			this.printThetaMatrix(thetasMatrix);
+			
+			if(this.options.isActiveConsolePrinting())
+				this.printThetaMatrix(thetasMatrix);
+			
 			optimal = this.isOptimalSolution(deltas);
 			iteration++;
 		}

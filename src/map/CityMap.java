@@ -1833,7 +1833,8 @@ public class CityMap {
 		
 		//Options
 		this.options = new Options();
-		options.setAllTrucksStartingSamePosition(false);
+		this.options.importOptions("options.xml");
+		
 	}
 	
 	
@@ -1946,7 +1947,7 @@ public class CityMap {
 	 * generates random values for the attributes of the CityMap
 	 * object.
 	 */
-	public CityMap(int minWidth, int maxWidth, int minHeight, int maxHeight) {
+	public CityMap(int minWidth, int maxWidth, int minHeight, int maxHeight) throws ParserConfigurationException, SAXException, IOException {
 		//generates a random id for the CityMap object, between 1 and 100.
 		Random id = new Random();
 		int lower = 1;
@@ -1997,7 +1998,7 @@ public class CityMap {
 		
 		//Options
 		this.options = new Options();
-		options.setAllTrucksStartingSamePosition(false);
+		this.options.importOptions("options.xml");
 	}
 	
 	
