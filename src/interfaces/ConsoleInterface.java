@@ -194,7 +194,7 @@ public class ConsoleInterface {
 	 * @param t
 	 * @return
 	 */
-	public int searchTruckInList(Truck t){
+	private int searchTruckInList(Truck t){
 		Iterator<Truck> truckIt = this.trucks.iterator();
 		int counter = 0;
 		while(truckIt.hasNext()){
@@ -258,7 +258,7 @@ public class ConsoleInterface {
 	 * 
 	 * @return
 	 */
-	public int buildListTrucks() {
+	private int buildListTrucks() {
 		String trucksInfo = "";
 		trucksInfo += "\nTrucks List: ";
 		trucksInfo += "\n\n";
@@ -324,8 +324,8 @@ public class ConsoleInterface {
 				case 1:
 					truckInfo += "\n\n\nEdit Truck ID: ";
 					truckInfo += "\n\n";
-					truckInfo += "Previous ID: " + toEdit.getId();
-					truckInfo += "New ID: ";
+					truckInfo += "\nPrevious ID: " + toEdit.getId();
+					truckInfo += "\nNew ID: ";
 					System.out.println(truckInfo);
 					Scanner in = new Scanner(System.in);
 					int newID = in.nextInt();
@@ -336,8 +336,8 @@ public class ConsoleInterface {
 				case 2:
 					truckInfo += "\n\n\nEdit Truck name: ";
 					truckInfo += "\n\n";
-					truckInfo += "Previous Name: " + toEdit.getName();
-					truckInfo += "New Name: ";
+					truckInfo += "\nPrevious Name: " + toEdit.getName();
+					truckInfo += "\nNew Name: ";
 					System.out.println(truckInfo);
 					Scanner in2 = new Scanner(System.in);
 					String newName = in2.nextLine();
@@ -348,8 +348,8 @@ public class ConsoleInterface {
 				case 3:
 					truckInfo += "\n\n\nEdit Garbage Type: ";
 					truckInfo += "\n\n";
-					truckInfo += "Previous Garbage Type: " + toEdit.getGarbageType();
-					truckInfo += "New Garbage Type: ";
+					truckInfo += "\nPrevious Garbage Type: " + toEdit.getGarbageType();
+					truckInfo += "\nNew Garbage Type: ";
 					System.out.println(truckInfo);
 					Scanner in3 = new Scanner(System.in);
 					String newGC = in3.nextLine();
@@ -360,8 +360,8 @@ public class ConsoleInterface {
 				case 4:
 					truckInfo += "\n\n\nEdit Maximum Capacity: ";
 					truckInfo += "\n\n";
-					truckInfo += "Previous Max. Capacity: " + toEdit.getGarbageType();
-					truckInfo += "New Max. Capacity: ";
+					truckInfo += "\nPrevious Max. Capacity: " + toEdit.getGarbageType();
+					truckInfo += "\nNew Max. Capacity: ";
 					System.out.println(truckInfo);
 					Scanner in4 = new Scanner(System.in);
 					double newMC = in4.nextDouble();
@@ -425,14 +425,36 @@ public class ConsoleInterface {
 		return false;
 	}
 	
+	
+	/*
+	 * 
+	 */
+	private char buildChooseCityMapSubMenu() {
+		char option = ' ';
+		
+		String cText = "";
+		cText += "\nYou can load a CityMap from a file or generate a new one.";
+		cText += "\n\n1)Load from file.";
+		cText += "\n2)Generate new CityMap.";
+		cText += "\n\nWhich action do you want to do ?";
+		cText += "\nPress b to go back.";
+		System.out.println(cText);
+		Scanner in = new Scanner(System.in);
+		option = (char) in.next().charAt(0);
+		
+		return option;
+	}
+	
 	/**
 	 * 
 	 * @param fileName
 	 */
 	private String buildChooseCityMap() {
 		String cText = "";
-		cText += "\nChoose the CityMap: ";
-		cText += "\n\n";
+		cText += "\nChoose the CityMap (by its name): ";
+		System.out.println(cText);
+		this.listFiles(new File(System.getProperty("user.dir") + "/config/maps"));
+		cText = "\n\n";
 		cText += "\nInsert the name of the map file: ";
 		System.out.println(cText);
 		Scanner in = new Scanner(System.in);
@@ -445,12 +467,25 @@ public class ConsoleInterface {
 		return "";
 	}
 	
+	/*
+	 * 
+	 */
+	private void listFiles(File file) {
+		 File[] list = file.listFiles();
+		 int counter = 1;
+	     if(list!=null)
+	     for (File fil : list){
+	       System.out.println(counter + ") " + fil.getName());
+	       counter++;
+	     }
+	}
+	
 	/**
 	 * 
 	 * @param name
 	 * @param file
 	 */
-	public boolean findFile(String name,File file) {
+	private boolean findFile(String name,File file) {
         File[] list = file.listFiles();
         if(list!=null)
         for (File fil : list){
@@ -463,6 +498,50 @@ public class ConsoleInterface {
         }
         return false;
     }
+	
+	
+	private boolean generateCityMap() throws ParserConfigurationException, TransformerException, IOException {
+		boolean done = false;
+		String cText = "";
+		cText += "\n\nGenerate a new City Map. Insert width and height:";
+		cText += "\n\nMin. Width = ";
+		System.out.println(cText);
+		Scanner in = new Scanner (System.in);
+		int minWidth = in.nextInt();
+		
+		
+		cText = "";
+		cText += "\nMax. Width = ";
+		System.out.println(cText);
+		in = new Scanner(System.in);
+		int maxWidth = in.nextInt();
+		
+		cText = "";
+		cText += "\nMin. Height = ";
+		System.out.println(cText);
+		in = new Scanner (System.in);
+		int minHeight = in.nextInt();
+		
+		cText = "";
+		cText = "\nMax. Height = ";
+		System.out.println(cText);
+		in = new Scanner(System.in);
+		int maxHeight = in.nextInt();
+		
+		if( (minWidth > 0) && (maxWidth > 0) && (minHeight > 0) && (maxHeight > 0)) {
+			done = true;
+			this.map = new CityMap(minWidth, maxWidth, minHeight, maxHeight);
+			
+			cText = "";
+			cText += "\n\nSave new generated map as: ";
+			System.out.println(cText);
+			in = new Scanner(System.in);
+			String filename = in.nextLine();
+			this.map.exportMapToXML(filename);
+		}
+		
+		return done;
+	}
 	
 	
 	/**
@@ -529,7 +608,7 @@ public class ConsoleInterface {
 	 * @throws ParserConfigurationException
 	 * @throws TransformerException
 	 */
-	public boolean treatConfigureTruckSubMenu(char input) throws IOException, ParserConfigurationException, TransformerException {
+	private boolean treatConfigureTruckSubMenu(char input) throws IOException, ParserConfigurationException, TransformerException {
 		boolean done = false;
 		
 		switch(input){
@@ -571,6 +650,38 @@ public class ConsoleInterface {
 	}
 	
 	
+	private boolean treatChooseCityMapSubMenu(char optionSelected) throws ParserConfigurationException, SAXException, IOException, TransformerException{
+		boolean done = false;
+		
+		switch(optionSelected) {
+			//Load
+			case '1':
+				String mapName = this.buildChooseCityMap();
+				if(mapName != "") this.map = new CityMap(mapName);
+				break;
+			
+			//Generate
+			case '2':
+				done = this.generateCityMap();
+				if(done) break;
+				break;
+		
+			case 'b':
+				done = true;
+				break;
+		
+			case 'B':
+				done = true;
+				break;
+			
+			default:
+				break;
+		}
+		
+		return done;
+	}
+	
+	
 	/**
 	 * 
 	 * @param mainMenuOption
@@ -592,12 +703,9 @@ public class ConsoleInterface {
 			//choose the CityMap
 			case 2:
 				this.lastOption = '2';
-				String cityMap = this.buildChooseCityMap();
-				if(cityMap != "") {
-					this.map = new CityMap(cityMap);
-					break;
-				}
-				if(this.map != null) break;
+				char optionSelectedChooseCityMap = this.buildChooseCityMapSubMenu();
+				boolean doneCityMap = this.treatChooseCityMapSubMenu(optionSelectedChooseCityMap);
+				if(doneCityMap) break;
 				break;
 			//configure Trucks
 			case 3:

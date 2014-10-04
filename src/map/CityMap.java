@@ -1165,7 +1165,7 @@ public class CityMap {
 		}
 		
 		Random rMaxCapacity = new Random();
-		int GCMaxCapacity = rMaxCapacity.nextInt(400-50) + 50; //min 50 kg, max 400 kg.
+		int GCMaxCapacity = rMaxCapacity.nextInt(500-50) + 50; //min 50 kg, max 400 kg.
 		
 		Random rCurrentOccupation = new Random();
 		int GCCurrentOccupation = rCurrentOccupation.nextInt(GCMaxCapacity - 5) + 5;

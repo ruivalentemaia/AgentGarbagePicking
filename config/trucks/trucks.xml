@@ -1,1 +1,1 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><trucks/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><trucks><truck><id>1</id><name>t1</name><garbageType>glass</garbageType><maxCapacity>400.0</maxCapacity></truck><truck><id>2</id><name>t2</name><garbageType>glass</garbageType><maxCapacity>500.0</maxCapacity></truck></trucks>
