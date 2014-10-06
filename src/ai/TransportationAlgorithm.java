@@ -3,6 +3,7 @@ package ai;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -35,6 +36,8 @@ public class TransportationAlgorithm {
 	private double[] v;
 	
 	private Options options;
+	
+	private List<Plan> optimalPlans;
 	
 	public int getId() {
 		return id;
@@ -133,6 +136,14 @@ public class TransportationAlgorithm {
 		this.v = v;
 	}
 
+	public List<Plan> getOptimalPlans() {
+		return optimalPlans;
+	}
+
+	public void setOptimalPlans(List<Plan> optimalPlans) {
+		this.optimalPlans = optimalPlans;
+	}
+
 	/**
 	 * 
 	 * 
@@ -150,6 +161,7 @@ public class TransportationAlgorithm {
 		this.garbageContainers = new ArrayList<GarbageContainer>();
 		this.garbageContainers = gc;
 		this.assignments = new LinkedHashMap<Truck, Goal>();
+		this.optimalPlans = new ArrayList<Plan>();
 		
 		this.options = new Options();
 		this.options.importOptions("options.xml");
@@ -1282,7 +1294,32 @@ public class TransportationAlgorithm {
 			optimal = this.isOptimalSolution(deltas);
 			iteration++;
 		}
-				
+		
+		/*
+		 * Fills the optimalPlans object with the optimal plan for each
+		 * Truck.
+		 */
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		int counterLine = 0;
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			int counterColumn = 0;
+			
+			HashMap<GarbageContainer, Double> qToCollect = new HashMap<GarbageContainer, Double>();
+			Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+			while(itGC.hasNext()){
+				GarbageContainer gc = itGC.next();
+				double quantityToCollect = this.valuesMatrix[counterLine][counterColumn];
+				if(quantityToCollect > 0) {
+					qToCollect.put(gc, quantityToCollect);
+					counterColumn++;
+				}
+			}
+			
+			counterLine++;
+			Plan plan = new Plan(t, qToCollect);
+			this.optimalPlans.add(plan);
+		}
 	}
 	
 	

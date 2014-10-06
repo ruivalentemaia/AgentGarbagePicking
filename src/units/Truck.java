@@ -332,6 +332,7 @@ public class Truck {
 	}
 	
 	
+	
 	/**
 	 * 
 	 * 
@@ -617,8 +618,9 @@ public class Truck {
 	/*
 	 * Performs Greedy path search for one Goal g, passed as parameter
 	 */
-	public void doGreedyPathSearch(Goal g, int sizeOfCurrentPath){
-		this.buildGoalsList();
+	public void doGreedyPathSearch(Goal g, int sizeOfCurrentPath, int whichTimeWasThisDone){
+		if(whichTimeWasThisDone == 1)
+			this.buildGoalsList();
 		GreedyPathSearch greedy = new GreedyPathSearch(g);
 		double currentH = g.euclideanDistance(g.getStartPoint(), g.getEndPoint());
 		int iteration = 1;
@@ -770,7 +772,7 @@ public class Truck {
 	 * Does the GreedyPathSearch for each one of the goals available
 	 * in the goals List.
 	 */
-	public void buildTotalPathPlanning() {
+	public void buildTotalPathPlanning(int whichTime) {
 		Iterator<Goal> itGoal = this.goals.iterator();
 		Goal[] goalsTemp = new Goal[this.goals.size()];
 		int counter = 0;
@@ -790,7 +792,7 @@ public class Truck {
 		this.orderGoalById(goalsTemp);
 		
 		for(int i = 0; i < goalsTemp.length; i++){
-			this.doGreedyPathSearch(goalsTemp[i], this.pathToBeWalked.size());
+			this.doGreedyPathSearch(goalsTemp[i], this.pathToBeWalked.size(), whichTime);
 		}
 	}
 	
@@ -826,7 +828,7 @@ public class Truck {
 		this.setCurrentPosition(startingPoint);
 		
 		this.buildGoalsList();
-		this.buildTotalPathPlanning();
+		this.buildTotalPathPlanning(1);
 		
 		if(this.options.isActiveConsolePrinting())
 			this.printPathToBeWalked();

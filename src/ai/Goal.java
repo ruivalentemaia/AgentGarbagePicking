@@ -1,8 +1,5 @@
 package ai;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import map.Point;
 
 public class Goal {
@@ -14,7 +11,6 @@ public class Goal {
 	public int getId() {
 		return id;
 	}
-
 
 	public void setId(int id) {
 		this.id = id;

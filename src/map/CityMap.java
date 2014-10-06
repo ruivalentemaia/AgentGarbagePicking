@@ -372,6 +372,18 @@ public class CityMap {
 		return null;
 	}
 	
+	/*
+	 * Selects a GarbageContainer from a parameter id.
+	 */
+	public GarbageContainer selectGCFromId(int id) {
+		Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			if(gc.getId() == id) return gc;
+		}
+		return null;
+	}
+	
 	
 	/*
 	 * Selects the neighbours of the parameter Point p and
@@ -521,6 +533,18 @@ public class CityMap {
 		return gcByType;
 	}
 	
+	
+	/*
+	 * Selects a Truck from its Truck name.
+	 */
+	public Truck selectTruckFromName(String n){
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			if(t.getTruckName().equals(n)) return t;
+		}
+		return null;
+	}
 	
 	
 	/*
