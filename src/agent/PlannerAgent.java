@@ -182,6 +182,7 @@ public class PlannerAgent extends Agent {
 		private Planner planner;
 		private String tempFilePath = System.getProperty("user.dir") + "/temp";
 		private int nMessages = 0;
+		private String filename = "";
 		
 		public Planner getPlanner() {
 			return planner;
@@ -310,6 +311,7 @@ public class PlannerAgent extends Agent {
 			            	String filename = "";
 			            	try {
 			            		filename = this.exportPlanObject(plan);
+			            		this.filename = filename;
 							} catch (ParserConfigurationException | TransformerException e) {
 								e.printStackTrace();
 							}

@@ -45,6 +45,7 @@ public class CityMap {
 	
 	//XML file attributes
 	private String mapsFilePath = System.getProperty("user.dir") + "/config/maps";
+	private String mapsFileName;
 	private String trucksFilePath = System.getProperty("user.dir") + "/config/trucks";
 	
 	
@@ -181,6 +182,14 @@ public class CityMap {
 
 	public void setFilePath(String filePath) {
 		this.mapsFilePath = filePath;
+	}
+
+	public String getMapsFileName() {
+		return mapsFileName;
+	}
+
+	public void setMapsFileName(String mapsFileName) {
+		this.mapsFileName = mapsFileName;
 	}
 
 	public String getTrucksFilePath() {
@@ -1534,6 +1543,8 @@ public class CityMap {
 		f.setReadable(true);
 		f.setWritable(true);
 		File file = new File(f.toString() + "/" + filename);
+		
+		this.setMapsFileName(filename);
 		
 		
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();

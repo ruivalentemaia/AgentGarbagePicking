@@ -1,5 +1,6 @@
 package units;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,8 +11,20 @@ import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import ai.GreedyPathSearch;
@@ -46,6 +59,8 @@ public class Truck {
 	private CityMap completeCityMap;
 	
 	private Options options;
+	
+	private String tempFilePath = System.getProperty("user.dir") + "/temp";
 	
 	//Comparators for arrays.
 	static private Comparator<Goal> orderId;
@@ -197,6 +212,24 @@ public class Truck {
 		this.completeCityMap = completeCityMap;
 	}
 	
+	public String getTempFilePath() {
+		return tempFilePath;
+	}
+
+
+	public void setTempFilePath(String tempFilePath) {
+		this.tempFilePath = tempFilePath;
+	}
+	
+	public Options getOptions() {
+		return this.options;
+	}
+	
+	public void setOptions(Options options){
+		this.options = options;
+	}
+
+
 	/*
 	 * Orders by Id an array of Goals.
 	 */
@@ -835,15 +868,455 @@ public class Truck {
 	}
 
 	
+	
+	/*
+	 *
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 	XML EXPORT/IMPORT
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 */
+	
 	/**
+	 * 
+	 * @param filename
+	 * @return
+	 * @throws ParserConfigurationException
+	 * @throws TransformerException
+	 */
+	public String exportTruckInformation(String filename) throws ParserConfigurationException, TransformerException{
+		/*
+		 * private int id;
+		 * private String truckName;
+		 * private String garbageType;
+		 * private Point startPosition;
+		 * private Point currentPosition;
+		 * private double currentOccupation;
+		 * private double maxCapacity;
+		 * private List<Point> pathWalked;
+		 * private List<Point> pathToBeWalked;
+		 * private List<Goal> goals;
+		 * private List<GarbageContainer> garbageContainersToGoTo;
+		 * //complete list of the CityMap points
+		 * private CityMap completeCityMap;
+		 * private Options options;
+		 */
+		
+		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+		Document doc = docBuilder.newDocument();
+		
+		Element rootElement = doc.createElement("truck");
+		doc.appendChild(rootElement);
+		
+		Element id = doc.createElement("id");
+		id.appendChild(doc.createTextNode(Integer.toString(this.id)));
+		rootElement.appendChild(id);
+		
+		Element truckName = doc.createElement("name");
+		truckName.appendChild(doc.createTextNode(this.truckName));
+		rootElement.appendChild(truckName);
+		
+		Element garbageType = doc.createElement("garbageType");
+		garbageType.appendChild(doc.createTextNode(this.garbageType));
+		rootElement.appendChild(garbageType);
+		
+		Element startPosition = doc.createElement("startPosition");
+		startPosition.setAttribute("type", this.getStartPosition().getType());
+		startPosition.setAttribute("x", Integer.toString(this.getStartPosition().getX()));
+		startPosition.setAttribute("y", Integer.toString(this.getStartPosition().getY()));
+		rootElement.appendChild(startPosition);
+		
+		Element currentPosition = doc.createElement("currentPosition");
+		currentPosition.setAttribute("type", this.getCurrentPosition().getType());
+		currentPosition.setAttribute("x", Integer.toString(this.getCurrentPosition().getX()));
+		currentPosition.setAttribute("y", Integer.toString(this.getCurrentPosition().getY()));
+		rootElement.appendChild(currentPosition);
+		
+		Element currentOccupation = doc.createElement("currentOccupation");
+		currentOccupation.appendChild(doc.createTextNode(Double.toString(this.currentOccupation)));
+		rootElement.appendChild(currentOccupation);
+		
+		Element maxCapacity = doc.createElement("maxCapacity");
+		maxCapacity.appendChild(doc.createTextNode(Double.toString(this.maxCapacity)));
+		rootElement.appendChild(maxCapacity);
+		
+		Element pathWalked = doc.createElement("pathWalked");
+		Iterator<Point> itPathWalked = this.pathWalked.iterator();
+		while(itPathWalked.hasNext()){
+			Point p = itPathWalked.next();
+			
+			Element point = doc.createElement("pathWalkedPoint");
+			point.setAttribute("x", Integer.toString(p.getX()));
+			point.setAttribute("y", Integer.toString(p.getY()));
+			pathWalked.appendChild(point);
+		}
+		rootElement.appendChild(pathWalked);
+		
+		Element pathToBeWalked = doc.createElement("pathToBeWalked");
+		Iterator<Point> itPathToBeWalked = this.pathToBeWalked.iterator();
+		while(itPathToBeWalked.hasNext()){
+			Point p = itPathToBeWalked.next();
+			
+			Element point = doc.createElement("pathToBeWalkedPoint");
+			point.setAttribute("x", Integer.toString(p.getX()));
+			point.setAttribute("y", Integer.toString(p.getY()));
+			pathToBeWalked.appendChild(point);
+		}
+		rootElement.appendChild(pathToBeWalked);
+		
+		Element goals = doc.createElement("goals");
+		Iterator<Goal> itGoal = this.goals.iterator();
+		while(itGoal.hasNext()){
+			Goal g = itGoal.next();
+			
+			Element goal = doc.createElement("goal");
+			
+			Element goalId = doc.createElement("id");
+			goalId.appendChild(doc.createTextNode(Integer.toString(g.getId())));
+			goal.appendChild(goalId);
+			
+			Element startPoint = doc.createElement("startPoint");
+			startPoint.setAttribute("x", Integer.toString(g.getStartPoint().getX()));
+			startPoint.setAttribute("y", Integer.toString(g.getStartPoint().getY()));
+			goal.appendChild(startPoint);
+			
+			Element endPoint = doc.createElement("endPoint");
+			endPoint.setAttribute("x", Integer.toString(g.getEndPoint().getX()));
+			endPoint.setAttribute("y", Integer.toString(g.getEndPoint().getY()));
+			goal.appendChild(endPoint);
+			
+			Element bestPath = doc.createElement("bestPath");
+			
+			Element bestPathId = doc.createElement("id");
+			bestPathId.appendChild(doc.createTextNode(Integer.toString(g.getBestPath().getId())));
+			bestPath.appendChild(bestPathId);
+			
+			Element bestPathLength = doc.createElement("length");
+			bestPathLength.appendChild(doc.createTextNode(Integer.toString(g.getBestPath().getLength())));
+			bestPath.appendChild(bestPathLength);
+			
+			Element bestPathPoints = doc.createElement("points");
+			
+			Iterator<Point> itBPPoint = g.getBestPath().getPoints().iterator();
+			while(itBPPoint.hasNext()){
+				Point bpPoint = itBPPoint.next();
+				
+				Element bpPointElem = doc.createElement("point");
+				bpPointElem.setAttribute("x", Integer.toString(bpPoint.getX()));
+				bpPointElem.setAttribute("y", Integer.toString(bpPoint.getY()));
+				bestPathPoints.appendChild(bpPointElem);
+			}
+			bestPath.appendChild(bestPathPoints);
+			
+			goal.appendChild(bestPath);
+			
+			goals.appendChild(goal);
+		}
+		rootElement.appendChild(goals);
+		
+		Element garbageContainersToGo = doc.createElement("garbageContainersToGo");
+		
+		Iterator<GarbageContainer> itGC = this.garbageContainersToGoTo.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			
+			Element garbageContainer = doc.createElement("garbageContainer");
+			
+			Element gcId = doc.createElement("id");
+			gcId.appendChild(doc.createTextNode(Integer.toString(gc.getId())));
+			garbageContainer.appendChild(gcId);
+			
+			Element gcType = doc.createElement("type");
+			gcType.appendChild(doc.createTextNode(gc.getType()));
+			garbageContainer.appendChild(gcType);
+			
+			Element gcCurrentOccupation = doc.createElement("currentOccupation");
+			gcCurrentOccupation.appendChild(doc.createTextNode(Double.toString(gc.getCurrentOccupation())));
+			garbageContainer.appendChild(gcCurrentOccupation);
+			
+			Element gcMaxCapacity = doc.createElement("maxCapacity");
+			gcMaxCapacity.appendChild(doc.createTextNode(Double.toString(gc.getMaxCapacity())));
+			garbageContainer.appendChild(gcMaxCapacity);
+			
+			Element gcPosition = doc.createElement("position");
+			gcPosition.setAttribute("x", Integer.toString(gc.getPosition().getX()));
+			gcPosition.setAttribute("y", Integer.toString(gc.getPosition().getY()));
+			garbageContainer.appendChild(gcPosition);
+			
+			garbageContainersToGo.appendChild(garbageContainer);
+		}
+		rootElement.appendChild(garbageContainersToGo);
+		
+		Element cityMap = doc.createElement("map");
+		cityMap.appendChild(doc.createTextNode(this.getCompleteCityMap().getMapsFileName()));
+		rootElement.appendChild(cityMap);
+		
+		Element options = doc.createElement("options");
+		options.appendChild(doc.createTextNode(this.getOptions().getOptionsFile()));
+		rootElement.appendChild(options);
+		
+		File f = new File(this.tempFilePath);
+		f.setExecutable(true);
+		f.setReadable(true);
+		f.setWritable(true);
+		File file = new File(f.toString() + "/" + filename);
+		
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		DOMSource source = new DOMSource(doc);
+		StreamResult result = new StreamResult(file);
+		
+		transformer.transform(source, result);
+				
+		return filename;
+	}
+	
+	
+	public void importFromXML(String filename) throws ParserConfigurationException, SAXException, IOException{
+		/*
+		 * private int id;
+		 * private String truckName;
+		 * private String garbageType;
+		 * private Point startPosition;
+		 * private Point currentPosition;
+		 * private double currentOccupation;
+		 * private double maxCapacity;
+		 * private List<Point> pathWalked;
+		 * private List<Point> pathToBeWalked;
+		 * private List<Goal> goals;
+		 * private List<GarbageContainer> garbageContainersToGoTo;
+		 * //complete list of the CityMap points
+		 * private CityMap completeCityMap;
+		 * private Options options;
+		 */
+		this.pathWalked = new ArrayList<Point>();
+		this.pathToBeWalked = new ArrayList<Point>();
+		this.goals = new ArrayList<Goal>();
+		this.garbageContainersToGoTo = new ArrayList<GarbageContainer>();
+		
+		File fXmlFile = new File(this.tempFilePath + "/" + filename);
+		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+		Document doc = dBuilder.parse(fXmlFile);
+		
+		doc.getDocumentElement().normalize();
+		
+		String id = doc.getElementsByTagName("id").item(0).getTextContent();
+		if(id != null) this.id = Integer.parseInt(id);
+		
+		String truckName = doc.getElementsByTagName("name").item(0).getTextContent();
+		if(truckName != null) this.truckName = truckName;
+		
+		String garbageType = doc.getElementsByTagName("garbageType").item(0).getTextContent();
+		if(garbageType != null) this.garbageType = garbageType;
+		
+		Element startPoint = (Element) doc.getElementsByTagName("startPosition").item(0);
+		String sPtype = startPoint.getAttribute("type");
+		int sPx = -1;
+		sPx = Integer.parseInt(startPoint.getAttribute("x"));
+		int sPy = -1;
+		sPy = Integer.parseInt(startPoint.getAttribute("y"));
+		
+		if(sPx != -1 && sPy != -1){
+			this.startPosition = new Point(sPx,sPy);
+			this.startPosition.setType(sPtype);
+		}
+		
+		Element currentPosition = (Element) doc.getElementsByTagName("currentPosition").item(0);
+		String cPtype = "";
+		cPtype = currentPosition.getAttribute("type");
+		int cPx = -1;
+		cPx = Integer.parseInt(currentPosition.getAttribute("x"));
+		int cPy = -1;
+		cPy = Integer.parseInt(currentPosition.getAttribute("y"));
+		
+		if(cPx != -1 && cPy != -1) {
+			this.currentPosition = new Point(cPx, cPy);
+			this.currentPosition.setType(cPtype);
+		}
+		
+		
+		String cOccupation = doc.getElementsByTagName("currentOccupation").item(0).getTextContent();
+		if(cOccupation !=  null) this.currentOccupation = Double.parseDouble(cOccupation);
+		
+		String maxCapacity = doc.getElementsByTagName("maxCapacity").item(0).getTextContent();
+		if(maxCapacity != null) this.maxCapacity = Double.parseDouble(maxCapacity);
+		
+		Element pathWalked = (Element) doc.getElementsByTagName("pathWalked").item(0);
+		if(pathWalked != null) {
+			NodeList nList = pathWalked.getElementsByTagName("point");
+			for(int temp = 0; temp < nList.getLength(); temp++){
+				Node nNode = nList.item(temp);
+				
+				if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+					Element eElement = (Element) nNode;
+					
+					String pX = eElement.getAttribute("x");
+					String pY = eElement.getAttribute("y");
+					
+					if(pX != null && pY != null) 
+						this.pathWalked.add(new Point(Integer.parseInt(pX), Integer.parseInt(pY)));
+				}
+			}
+		}
+		
+		
+		Node pathToBeWalkedNode = doc.getElementsByTagName("pathToBeWalked").item(0);
+		Element pathToBeWalked = (Element) pathToBeWalkedNode;
+		NodeList nList = pathToBeWalked.getElementsByTagName("point");
+		for(int temp = 0; temp < nList.getLength(); temp++){
+			Node nNode = nList.item(temp);
+			
+			if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+				Element eElement = (Element) nNode;
+				
+				String pX = eElement.getAttribute("x");
+				String pY = eElement.getAttribute("y");
+				
+				if(pX != null && pY != null) 
+					this.pathToBeWalked.add(new Point(Integer.parseInt(pX), Integer.parseInt(pY)));
+			}
+		}
+		
+		nList = doc.getElementsByTagName("goal");
+		for(int temp = 0; temp < nList.getLength(); temp++){
+			Node nNode = nList.item(temp);
+			
+			if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+				Element eElement = (Element) nNode;
+				
+				String goalIdStr = eElement.getElementsByTagName("id").item(0).getTextContent();
+				int goalId = -1;
+				if(goalIdStr != null) goalId = Integer.parseInt(goalIdStr);
+				
+				Element goalStartPoint = (Element) eElement.getElementsByTagName("startPoint").item(0);
+				int gSPx = -1;
+				gSPx = Integer.parseInt(goalStartPoint.getAttribute("x"));
+				int gSPy = -1;
+				gSPy = Integer.parseInt(goalStartPoint.getAttribute("y"));
+				
+				Element goalEndPoint = (Element) eElement.getElementsByTagName("endPoint").item(0);
+				int gEPx = -1;
+				gEPx = Integer.parseInt(goalEndPoint.getAttribute("x"));
+				int gEPy = -1;
+				gEPy = Integer.parseInt(goalEndPoint.getAttribute("y"));
+				
+				Goal g = null;
+				if(goalId != -1 && gSPx != -1 && gSPy != -1 && gEPx != -1 && gEPy != -1)
+					g = new Goal(goalId, new Point(gSPx, gSPy), new Point(gEPx, gEPy));
+			
+				Element bestPath = (Element) eElement.getElementsByTagName("bestPath").item(0);
+				
+				String bestPathId = "";
+				bestPathId = bestPath.getElementsByTagName("id").item(0).getTextContent();
+				int bPId = -1;
+				if(bestPathId != "") bPId = Integer.parseInt(bestPathId);
+				
+				String bestPathLength = "";
+				bestPathLength = bestPath.getElementsByTagName("length").item(0).getTextContent();
+				int bPL = -1;
+				if(bestPathLength != "") bPL = Integer.parseInt(bestPathLength);
+				
+				List<Point> bestPathPoints = new ArrayList<Point>();
+				NodeList nListPoints = bestPath.getElementsByTagName("point");
+				for(int temp2 = 0; temp2 < nListPoints.getLength(); temp2++){
+					Node nNodePoints = nListPoints.item(temp);
+					
+					if (nNodePoints.getNodeType() == Node.ELEMENT_NODE) {
+						Element pElement = (Element) nNodePoints;
+						
+						String pXStr = pElement.getAttribute("x");
+						String pYStr = pElement.getAttribute("y");
+						int pX = -1;
+						int pY = -1;
+						
+						if(pXStr != null && pYStr != null){
+							pX = Integer.parseInt(pXStr);
+							pY = Integer.parseInt(pYStr);
+							bestPathPoints.add(new Point(pX, pY));
+						}
+					}
+				}
+				
+				if(g != null) {
+					g.setBestPath(new Path(bPId));
+					g.getBestPath().setLength(bPL);
+					g.getBestPath().setPoints(bestPathPoints);
+					
+					this.goals.add(g);
+				}
+			}
+		}
+		
+		nList = doc.getElementsByTagName("garbageContainer");
+		for(int temp = 0; temp < nList.getLength(); temp++){
+			Node nNode = nList.item(temp);
+			
+			if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+				Element eElement = (Element) nNode;
+				
+				String gcIdStr = eElement.getElementsByTagName("id").item(0).getTextContent();
+				int gcId = -1;
+				if(gcIdStr != null) gcId = Integer.parseInt(gcIdStr);
+				
+				String gcType = "";
+				gcType = eElement.getElementsByTagName("type").item(0).getTextContent();
+				
+				String gcCurrentOccStr = eElement.getElementsByTagName("currentOccupation").item(0).getTextContent();
+				double gcCurrentOccupation = -1;
+				if(gcCurrentOccStr != null) gcCurrentOccupation = Double.parseDouble(gcCurrentOccStr);
+				
+				String gcMaxCapStr = eElement.getElementsByTagName("maxCapacity").item(0).getTextContent();
+				double gcMaxCapacity = -1;
+				if(gcMaxCapStr != null) gcMaxCapacity = Double.parseDouble(gcMaxCapStr);
+				
+				Element gcPos = (Element) eElement.getElementsByTagName("position").item(0);
+				int gcPosx = -1;
+				gcPosx = Integer.parseInt(gcPos.getAttribute("x"));
+				int gcPosy = -1;
+				gcPosy = Integer.parseInt(gcPos.getAttribute("y"));
+				
+				
+				if(gcId != -1 && gcType != "" && gcMaxCapacity != -1 && gcCurrentOccupation != - 1 && gcPosx != -1 && gcPosy != -1){
+					GarbageContainer gc = new GarbageContainer(gcId, gcType, gcMaxCapacity, gcCurrentOccupation, new Point(gcPosx, gcPosy));
+					this.garbageContainersToGoTo.add(gc);
+				}
+			}
+		}
+		try {
+			String map = doc.getElementsByTagName("map").item(0).getTextContent();
+			if(map != null) this.completeCityMap = new CityMap(map);
+		} catch(NullPointerException e){
+			e.printStackTrace();
+		}
+		
+		
+		String options = "";
+		options = doc.getElementsByTagName("options").item(0).getTextContent();
+		if(options != "") {
+			this.options = new Options();
+			this.options.importOptions(options);
+		}
+	}
+	
+	/*
 	 * 
 	 * 
 	 * 
 	 *
-	 * 	CONSTRUCTOR.
-	 * @throws IOException 
-	 * @throws SAXException 
-	 * @throws ParserConfigurationException 
+	 * 
+	 * 
+	 * 
+	 * CONSTRUCTOR.
+	 *
+	 *
 	 *
 	 * 
 	 * 
@@ -851,8 +1324,14 @@ public class Truck {
 	 */
 
 	
-	/*
+	/**
 	 * Constructor with 3 arguments (ID, truckName and startingPoint).
+	 * @param ID
+	 * @param n
+	 * @param gT
+	 * @throws ParserConfigurationException
+	 * @throws SAXException
+	 * @throws IOException
 	 */
 	public Truck(int ID, String n, String gT) throws ParserConfigurationException, SAXException, IOException{
 		this.id = ID;

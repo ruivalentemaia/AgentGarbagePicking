@@ -284,8 +284,10 @@ public class TransportationAlgorithm {
 				while(itGoals.hasNext()){
 					Goal g = itGoals.next();
 					if(g.getBestPath().getLength() != 0) {
-						this.costsMatrix[truckIndex][goalIndex] = g.getBestPath().getLength();
-						goalIndex++;
+						if(goalIndex < nGarbageContainers){
+							this.costsMatrix[truckIndex][goalIndex] = g.getBestPath().getLength();
+							goalIndex++;
+						}
 					}
 				}
 				truckIndex++;
@@ -1307,18 +1309,54 @@ public class TransportationAlgorithm {
 			
 			HashMap<GarbageContainer, Double> qToCollect = new HashMap<GarbageContainer, Double>();
 			Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+			List<Double> valuesToCollect = new ArrayList<Double>();
 			while(itGC.hasNext()){
 				GarbageContainer gc = itGC.next();
 				double quantityToCollect = this.valuesMatrix[counterLine][counterColumn];
 				if(quantityToCollect > 0) {
+					valuesToCollect.add(quantityToCollect);
 					qToCollect.put(gc, quantityToCollect);
 					counterColumn++;
 				}
 			}
 			
-			counterLine++;
-			Plan plan = new Plan(t, qToCollect);
-			this.optimalPlans.add(plan);
+			//checks if it's necessary that another Truck goes there.
+			boolean continueThis = true;
+			itGC = this.garbageContainers.iterator();
+			List<Boolean> continueList = new ArrayList<Boolean>();
+			int counter = 0;
+			while(itGC.hasNext()){
+				continueThis = true;
+				GarbageContainer gc = itGC.next();
+				if(valuesToCollect.size() > 0){
+					double valueRetrieved = valuesToCollect.get(counter);
+					if(gc.getCurrentOccupation() == valueRetrieved){
+						continueThis = false;
+					}
+					continueList.add(continueThis);
+				}
+			}
+			
+			Iterator<Boolean> itCL = continueList.iterator();
+			continueThis = true;
+			int counterFalse = 0, counterTrue = 0;
+			while(itCL.hasNext()){
+				continueThis = itCL.next();
+				if(continueThis == false) counterFalse++;
+				else counterTrue++;
+			}
+			
+			if(counterFalse == continueList.size()) {
+				counterLine++;
+				Plan plan = new Plan(t, qToCollect);
+				this.optimalPlans.add(plan);
+				break;
+			}
+			else {
+				counterLine++;
+				Plan plan = new Plan(t, qToCollect);
+				this.optimalPlans.add(plan);
+			}
 		}
 	}
 	

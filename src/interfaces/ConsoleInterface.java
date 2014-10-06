@@ -368,7 +368,7 @@ public class ConsoleInterface {
 				case 4:
 					truckInfo += "\n\n\nEdit Maximum Capacity: ";
 					truckInfo += "\n\n";
-					truckInfo += "\nPrevious Max. Capacity: " + toEdit.getGarbageType();
+					truckInfo += "\nPrevious Max. Capacity: " + toEdit.getMaxCapacity();
 					truckInfo += "\nNew Max. Capacity: ";
 					System.out.println(truckInfo);
 					Scanner in4 = new Scanner(System.in);
