@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -23,6 +25,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import map.CityMap;
 import map.GarbageContainer;
 import map.Point;
 import map.Road;
@@ -149,6 +152,7 @@ public class TruckAgent extends Agent{
 		private String tempFilePath = System.getProperty("user.dir") + "/temp";
 		private String filename;
 		private int state;
+		private Plan plan;
 		
 		public receiveOptimalPlan(Agent a, Truck t, String filename){
 			super(a);
@@ -181,6 +185,14 @@ public class TruckAgent extends Agent{
 			this.state = state;
 		}
 
+		public Plan getPlan() {
+			return plan;
+		}
+
+		public void setPlan(Plan plan) {
+			this.plan = plan;
+		}
+
 		/**
 		 * 
 		 * @param filename
@@ -201,6 +213,7 @@ public class TruckAgent extends Agent{
 			
 			NodeList nList = doc.getElementsByTagName("assignment");
 			HashMap<GarbageContainer, Double> map = new HashMap<GarbageContainer, Double>();
+			HashMap<GarbageContainer, Boolean> cRegistry = new HashMap<GarbageContainer, Boolean>();
 			for(int temp = 0; temp < nList.getLength(); temp++){
 				Node nNode = nList.item(temp);
 				
@@ -214,10 +227,11 @@ public class TruckAgent extends Agent{
 					double amount = Double.parseDouble(amountToCollect.getTextContent());
 					
 					map.put(this.truck.getCompleteCityMap().selectGCFromId(gcId), amount);
+					cRegistry.put(this.truck.getCompleteCityMap().selectGCFromId(gcId), false);
 				}
 			}
 			
-			return new Plan(this.truck.getCompleteCityMap().selectTruckFromName(truck), map);
+			return new Plan(this.truck.getCompleteCityMap().selectTruckFromName(truck), map, cRegistry);
 		}
 		
 		
@@ -457,7 +471,9 @@ public class TruckAgent extends Agent{
 
 		@Override
 		public void action() {
+			
 			switch(this.state){
+			
 			/*
 			 * Receives Plan, processes again the goals of this Truck,
 			 * exports its information to an XML file and goes to the next
@@ -498,6 +514,7 @@ public class TruckAgent extends Agent{
 							t.setStartPosition(startingPoint);
 							t.setCurrentPosition(startingPoint);
 							t.setGoals(this.buildGoalsList(plan));
+							this.plan = plan;
 							t.buildTotalPathPlanning(2);
 							
 							this.truck = t;
@@ -520,19 +537,101 @@ public class TruckAgent extends Agent{
 				}
 				break;
 				
-				/*
-				 * 
-				 */
-				case 2:
-					this.state = 3;
-					break;
-				default:
-					System.out.println(getAID().getLocalName() + " is exiting.");
-					finished = true;
-					break;
+			/*
+			 * Iterates over the pathToBeWalked list until it finds a 
+			 * position that corresponds to a position where garbage
+			 * should be collected.
+			 */
+			case 2:
+				List<Goal> goals = this.truck.getGoals();
+				Iterator<Point> pathToBeWalked = this.truck.getPathToBeWalked().iterator();
+				
+				while(pathToBeWalked.hasNext()){
+					Point firstPoint = pathToBeWalked.next();
+					pathToBeWalked.remove();
+					
+					this.truck.setCurrentPosition(firstPoint);
+					this.truck.getPathWalked().add(firstPoint);
+					this.truck.getCompleteCityMap().updateTruckPosition(this.truck);
+					
+					Iterator<Goal> itGoal = goals.iterator();
+					while(itGoal.hasNext()){
+						Goal g = itGoal.next();
+						
+						if(this.truck.positionClosestToGoal(firstPoint, g)){
+							this.state = 3;
+							break;
+						}
+					}
+					
+					System.out.println(getAID().getLocalName() + ": Moved to (" + firstPoint.getX() + ", " + firstPoint.getY() + ").");
+					if(this.state == 3) break;
+				}
+				
+				//stop condition.
+				if(this.truck.getPathToBeWalked().isEmpty()){
+					System.out.println(getAID().getLocalName() + ": Finished working and I'm exiting.");
+					this.state = 4;
+				}
+				break;
+			
+			/*
+			 * Collects Garbage from a GarbageContainer.
+			 */
+			case 3:
+				Iterator<Goal> itGoal = this.truck.getGoals().iterator();
+				
+				while(itGoal.hasNext()){
+					Goal g = itGoal.next();
+					HashMap<GarbageContainer, Double> assignment = this.plan.getAssignment();
+					Iterator assignmentIt = assignment.entrySet().iterator();
+					int counter = 1;
+					
+					while(assignmentIt.hasNext()){
+						Map.Entry<GarbageContainer, Double> pairs = (Entry<GarbageContainer, Double>) assignmentIt.next();
+						int truckX = this.truck.getCurrentPosition().getX();
+						int truckY = this.truck.getCurrentPosition().getY();
+						int gcPosX = pairs.getKey().getPosition().getX();
+						int gcPosY = pairs.getKey().getPosition().getY();
+						int diffPosX = Math.abs(gcPosX - g.getEndPoint().getX());
+						int diffPosY = Math.abs(gcPosY - g.getEndPoint().getY());
+						int diffTruckGCX = Math.abs(truckX - gcPosX);
+						int diffTruckGCY = Math.abs(truckY - gcPosY);
+						
+						if( (truckX == gcPosX || truckX == gcPosX - 1 || truckX == gcPosX +1) &&
+							(truckY == gcPosY || truckY == gcPosY - 1 || truckY == gcPosY + 1) &&
+							(diffTruckGCX == 1 || diffTruckGCY == 1) && !(diffTruckGCX == 1 && diffTruckGCY == 1) &&
+							(diffPosX == 1 || diffPosY == 1) && !(diffPosX == 1 && diffPosY == 1) ) {
+							if(!this.plan.getCollectedRegistry().get(pairs.getKey())) {
+								this.truck.collectGarbage(pairs.getKey(), pairs.getValue());
+								this.plan.changeValueOfCollectRegistry(pairs.getKey());
+								System.out.println(getAID().getLocalName() + ": Collected " + pairs.getValue() + " kg of garbage in (" + gcPosX + ", " + gcPosY + ").");
+								break;
+							}
+						}
+						counter++;
+					}
+					
+					boolean allCollected = false;
+					Iterator cRegistryIt = this.plan.getCollectedRegistry().entrySet().iterator();
+					int size = this.plan.getCollectedRegistry().size();
+					int counterTrue = 0;
+					while(cRegistryIt.hasNext()){
+						Map.Entry<GarbageContainer, Boolean> pairs = (Entry<GarbageContainer, Boolean>) cRegistryIt.next();
+						if(pairs.getValue()){
+							counterTrue++;
+						}
+					}
+					
+					if(counterTrue == size) allCollected = true;
+					if(allCollected) break;
+				}
+				this.state = 2;
+				break;
+			default:
+				finished = true;
+				break;
 			}
-			
-			
 		}
 
 		@Override

@@ -365,6 +365,18 @@ public class Truck {
 	}
 	
 	
+	/*
+	 * Checks if a given position is the one closest to a given goal.
+	 */
+	public boolean positionClosestToGoal(Point p, Goal g){
+		if( ((p.getX() == g.getEndPoint().getX()) || (p.getX() == g.getEndPoint().getX() - 1) || (p.getX() == g.getEndPoint().getX() + 1)) &&
+			((p.getY() == g.getEndPoint().getY() || (p.getY() == g.getEndPoint().getY() - 1) || (p.getY() == g.getEndPoint().getY() + 1))) ) {
+			return true;
+		}
+		return false;
+	}
+	
+	
 	
 	/**
 	 * 
@@ -378,6 +390,22 @@ public class Truck {
 	 * 
 	 * 
 	 */
+	
+	/*
+	 * Collects Garbage from one GarbageContainer
+	 */
+	public void collectGarbage(GarbageContainer gc, double quantity){
+		Iterator<GarbageContainer> itGC = this.garbageContainersToGoTo.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gContainer = itGC.next();
+			if(gc.getPosition().getX() == gContainer.getPosition().getX() &&
+			   gc.getPosition().getY() == gContainer.getPosition().getY()){
+				gc.setCurrentOccupation(gc.getCurrentOccupation() - quantity);
+				this.setCurrentOccupation(this.getCurrentOccupation() + quantity);
+				gContainer.setCurrentOccupation(gContainer.getCurrentOccupation() - quantity);
+			}
+		}
+	}
 	
 	/*
 	 * This truck moves one position to the left.

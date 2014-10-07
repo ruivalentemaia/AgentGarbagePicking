@@ -557,6 +557,21 @@ public class CityMap {
 	
 	
 	/*
+	 * Updates the currentPosition of a parameter-passed Truck.
+	 */
+	public void updateTruckPosition(Truck t){
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck truck = itTruck.next();
+			if(truck.getTruckName().equals(t.getTruckName())){
+				truck.setCurrentPosition(new Point(t.getCurrentPosition().getX(), t.getCurrentPosition().getY()));
+				break;
+			}
+		}
+	}
+	
+	
+	/*
 	 * 
 	 * 
 	 * 		CROSSROADS GENERATION
@@ -2046,7 +2061,7 @@ public class CityMap {
 		//allocates in the cityMap the housing area (that for now is all the area)
 		for(int i = 0; i < cityMap.length; i++){
 			for(int j = 0; j < cityMap[0].length; j++){
-				cityMap[i][j] = "o";
+				cityMap[i][j] = " ";
 			}
 		}
 		
@@ -2057,13 +2072,13 @@ public class CityMap {
 			Crossroads c = it.next();
 			x = c.getCenter().getX();
 			y = c.getCenter().getY();
-			cityMap[x][y] = "c";
+			cityMap[x][y] = "o";
 			
 			Road left = c.getR1();
 			Iterator<Point> itPoints = left.getPoints().iterator();
 			while(itPoints.hasNext()){
 				Point p = itPoints.next();
-				cityMap[p.getX()][p.getY()] = "r";
+				cityMap[p.getX()][p.getY()] = "-";
 			}
 			
 			
@@ -2071,14 +2086,14 @@ public class CityMap {
 			itPoints = up.getPoints().iterator();
 			while(itPoints.hasNext()){
 				Point p = itPoints.next();
-				cityMap[p.getX()][p.getY()] = "r";
+				cityMap[p.getX()][p.getY()] = "|";
 			}
 			
 			Road right = c.getR3();
 			itPoints = right.getPoints().iterator();
 			while(itPoints.hasNext()){
 				Point p = itPoints.next();
-				cityMap[p.getX()][p.getY()] = "r";
+				cityMap[p.getX()][p.getY()] = "-";
 			}
 			
 			
@@ -2086,7 +2101,7 @@ public class CityMap {
 			itPoints = down.getPoints().iterator();
 			while(itPoints.hasNext()){
 				Point p = itPoints.next();
-				cityMap[p.getX()][p.getY()] = "r";
+				cityMap[p.getX()][p.getY()] = "|";
 			}
 		}
 		
@@ -2097,6 +2112,12 @@ public class CityMap {
 		}
 		
 		String debugPrinter = "";
+		
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			cityMap[t.getCurrentPosition().getX()][t.getCurrentPosition().getY()] = Integer.toString(t.getId());
+		}
 		
 		for(int i = 0; i < cityMap[0].length; i++){
 			for(int j = 0; j < cityMap.length; j++){

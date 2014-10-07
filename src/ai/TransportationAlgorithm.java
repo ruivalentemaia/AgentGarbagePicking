@@ -1308,6 +1308,7 @@ public class TransportationAlgorithm {
 			int counterColumn = 0;
 			
 			HashMap<GarbageContainer, Double> qToCollect = new HashMap<GarbageContainer, Double>();
+			HashMap<GarbageContainer, Boolean> cRegistry = new HashMap<GarbageContainer, Boolean>();
 			Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
 			List<Double> valuesToCollect = new ArrayList<Double>();
 			while(itGC.hasNext()){
@@ -1316,6 +1317,7 @@ public class TransportationAlgorithm {
 				if(quantityToCollect > 0) {
 					valuesToCollect.add(quantityToCollect);
 					qToCollect.put(gc, quantityToCollect);
+					cRegistry.put(gc, false);
 					counterColumn++;
 				}
 			}
@@ -1348,13 +1350,13 @@ public class TransportationAlgorithm {
 			
 			if(counterFalse == continueList.size()) {
 				counterLine++;
-				Plan plan = new Plan(t, qToCollect);
+				Plan plan = new Plan(t, qToCollect, cRegistry);
 				this.optimalPlans.add(plan);
 				break;
 			}
 			else {
 				counterLine++;
-				Plan plan = new Plan(t, qToCollect);
+				Plan plan = new Plan(t, qToCollect, cRegistry);
 				this.optimalPlans.add(plan);
 			}
 		}

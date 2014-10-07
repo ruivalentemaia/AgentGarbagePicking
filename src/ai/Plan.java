@@ -13,6 +13,7 @@ public class Plan {
 	
 	private Truck truck;
 	private HashMap<GarbageContainer, Double> assignment;
+	private HashMap<GarbageContainer, Boolean> collectedRegistry;
 
 	public Truck getTruck() {
 		return truck;
@@ -29,7 +30,15 @@ public class Plan {
 	public void setAssignment(HashMap<GarbageContainer, Double> assignment) {
 		this.assignment = assignment;
 	}
-	
+
+	public HashMap<GarbageContainer, Boolean> getCollectedRegistry() {
+		return collectedRegistry;
+	}
+
+	public void setCollectedRegistry(HashMap<GarbageContainer, Boolean> collectedRegistry) {
+		this.collectedRegistry = collectedRegistry;
+	}
+
 	public void addElementToAssignment(GarbageContainer gc, double d){
 		this.assignment.put(gc, d);
 	}
@@ -45,6 +54,18 @@ public class Plan {
 		}
 	}
 	
+	public void changeValueOfCollectRegistry(GarbageContainer gc){
+		if(this.collectedRegistry.containsKey(gc)){
+			boolean value = false;
+			if(this.collectedRegistry.get(gc))
+				value = false;
+			else value = true;
+			
+			this.collectedRegistry.remove(gc);
+			this.collectedRegistry.put(gc, value);
+		}
+	}
+	
 	public List<GarbageContainer> getAllGarbageContainers() {
 		List<GarbageContainer> gcList = new ArrayList<GarbageContainer>();
 		
@@ -57,10 +78,12 @@ public class Plan {
 		return gcList;
 	}
 	
-	public Plan(Truck t, HashMap<GarbageContainer, Double> assign){
+	public Plan(Truck t, HashMap<GarbageContainer, Double> assign, HashMap<GarbageContainer, Boolean> cRegistry){
 		this.truck = t;
 		this.assignment = new HashMap<GarbageContainer, Double>();
 		this.assignment = assign;
+		this.collectedRegistry = new HashMap<GarbageContainer, Boolean>();
+		this.collectedRegistry = cRegistry;
 	}
 	
 }
