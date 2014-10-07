@@ -44,6 +44,7 @@ public class ConsoleInterface {
 	private char lastOption;
 	private List<Truck> trucks;
 	private CityMap map;
+	private Options options;
 	
 	private String trucksFilePath = System.getProperty("user.dir") + "/config/trucks";
 	
@@ -86,6 +87,16 @@ public class ConsoleInterface {
 	}
 
 
+	public Options getOptions() {
+		return options;
+	}
+
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
+
 	/**
 	 * 
 	 */
@@ -116,6 +127,7 @@ public class ConsoleInterface {
 		cText += "\n1) All Trucks Starting in the same position : " + Boolean.toString(options.isAllTrucksStartingSamePosition());
 		cText += "\n2) Allow PlannerAgent to create Trucks : " + Boolean.toString(options.isAllowPlannerAgentToCreateTrucks());
 		cText += "\n3) Active Console Printing : " + Boolean.toString(options.isActiveConsolePrinting());
+		cText += "\n4) Agents Know Map : " + Boolean.toString(options.isAgentsKnowMap());
 		cText += "\n\n";
 		cText += "\nBack to Previous Menu (type b or B).";
 		cText += "\nSelect option to be changed: ";
@@ -579,34 +591,67 @@ public class ConsoleInterface {
 			Runtime rt = Runtime.instance();
 			AgentContainer ac = rt.createMainContainer(p);
 			
-			//adds all Trucks to the AgentContainer
-			List<String> truckAgents = new ArrayList<String>();
-			itTruck = this.trucks.iterator();
-			while(itTruck.hasNext()){
-				Truck t = itTruck.next();
+			/*
+			 * If the options are set to the mode where Agents have knowledge
+			 * of the full CityMap object, then it starts the Trucks and the 
+			 * PlannerAgent.
+			 */
+			if(this.options.isAgentsKnowMap()){
+				
+				//adds all Trucks to the AgentContainer
+				List<String> truckAgents = new ArrayList<String>();
+				itTruck = this.trucks.iterator();
+				while(itTruck.hasNext()){
+					Truck t = itTruck.next();
+					try {
+						Object[] args = new Object[1];
+						args[0] = t;
+						AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+						aController.start();
+						truckAgents.add(aController.getName());
+					} catch (StaleProxyException e) {
+						System.err.println("Error launching " + agent.TruckAgent.class.getName());
+					}
+				}
+				
+				//adds TruckAgents to the Planner object.
+				planner.setTruckAgents(truckAgents);
+				
+				//adds PlannerAgent to the AgentContainer
 				try {
 					Object[] args = new Object[1];
-					args[0] = t;
-					AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+					args[0] = planner;
+					AgentController aController = ac.createNewAgent("planner", agent.PlannerAgent.class.getName(), args);
 					aController.start();
-					truckAgents.add(aController.getName());
-				} catch (StaleProxyException e) {
-					System.err.println("Error launching " + agent.TruckAgent.class.getName());
+				} catch(jade.wrapper.StaleProxyException e) {
+					System.err.println("Error launching " + planner.getClass().getName());
 				}
 			}
 			
-			//adds TruckAgents to the Planner object.
-			planner.setTruckAgents(truckAgents);
-			
-			//adds PlannerAgent to the AgentContainer
-			try {
-				Object[] args = new Object[1];
-				args[0] = planner;
-				AgentController aController = ac.createNewAgent("planner", agent.PlannerAgent.class.getName(), args);
-				aController.start();
-			} catch(jade.wrapper.StaleProxyException e) {
-				System.err.println("Error launching " + planner.getClass().getName());
+			/*
+			 * In case Options are set for the Agents not to know the full
+			 * CityMap, then it starts only the Trucks.
+			 */
+			else {
+				//adds all Trucks to the AgentContainer
+				List<String> truckAgents = new ArrayList<String>();
+				itTruck = this.trucks.iterator();
+				while(itTruck.hasNext()){
+					Truck t = itTruck.next();
+					try {
+						Object[] args = new Object[1];
+						args[0] = t;
+						AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+						aController.start();
+						truckAgents.add(aController.getName());
+					} catch (StaleProxyException e) {
+						System.err.println("Error launching " + agent.TruckAgent.class.getName());
+					}
+				}
 			}
+			
+			ac.kill();
+			
 		}
 		else return;
 	}
@@ -651,6 +696,13 @@ public class ConsoleInterface {
 				options.export("options.xml");
 				break;
 			
+			//Agents Know Map
+			case '4':
+				if(options.isAgentsKnowMap())
+					options.setAgentsKnowMap(false);
+				else options.setAgentsKnowMap(true);
+				options.export("options.xml");
+				break;
 			case 'b':
 				done = true;
 				break;
@@ -931,9 +983,23 @@ public class ConsoleInterface {
 	 */
 	public ConsoleInterface() throws IOException, ParserConfigurationException, TransformerException, SAXException, ControllerException {
 		Options options = new Options();
-		options.export("options.xml");
+		
+		File optFile = new File(options.getOptionsFilePath() + "/" + options.getOptionsFile());
+		if(optFile.exists()){
+			options.importOptions(options.getOptionsFile());
+			this.options = options;
+		}
+		else {
+			options.export("options.xml");
+			this.options = options;
+		}
 		
 		this.trucks = new ArrayList<Truck>();
+		
+		File truckFile = new File(this.trucksFilePath + "/" + "trucks.xml");
+		if(truckFile.exists()){
+			this.importTrucks("trucks.xml");
+		}
 		
 		int mainMenuOption = 0;
 		

@@ -341,6 +341,20 @@ public class Truck {
 		return hasGoal;
 	}
 	
+	/*
+	 * Checks if a given Point p is on the pathWalked list.
+	 */
+	public boolean hasPointBeenWalked(Point p){
+		Iterator<Point> itPoint = this.pathWalked.iterator();
+		while(itPoint.hasNext()){
+			Point point = itPoint.next();
+			if(p.getX() == point.getX() && p.getY() == point.getY()){
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	
 	/*
 	 * Remove repeated Goals from the goals list.

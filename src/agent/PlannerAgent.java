@@ -63,6 +63,10 @@ public class PlannerAgent extends Agent {
 		addBehaviour(new sendOptimalPlan(this, this.planner));
 	}
 	
+	protected void takeDown() {
+		this.doDelete();
+	}
+	
 	
 	/**
 	 * 

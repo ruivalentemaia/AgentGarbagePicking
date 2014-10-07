@@ -289,6 +289,21 @@ public class CityMap {
 		this.crossroads.addAll(newCrossroads);
 	}
 	
+	/*
+	 * Checks if point is a Road or Crossroads.
+	 */
+	public boolean checkIfPointIsRoadOrCrossroads(Point p) {
+		Iterator<Point> itPoints = this.points.iterator();
+		while(itPoints.hasNext()){
+			Point point = itPoints.next();
+			if( (p.getX() == point.getX()) && (p.getY() == point.getY()) &&
+				( (point.getType().equals("ROAD")) || (point.getType().equals("CROSSROADS")) ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	
 	/*
 	 * Gets the Road to which a given Point parameter's object belongs to.
@@ -1569,6 +1584,19 @@ public class CityMap {
 		
 		transformer.transform(source, result);
 		
+	}
+	
+	/*
+	 * Constructs CityMap with almost no information (useful for the mode
+	 * where TruckAgents do not know the CityMap).
+	 */
+	public CityMap() {
+		this.id = 1;
+		this.name = "unknownMap";
+		this.points = new ArrayList<Point>();
+		this.roads = new ArrayList<Road>();
+		this.garbageContainers = new ArrayList<GarbageContainer>();
+		this.crossroads = new ArrayList<Crossroads>();
 	}
 	
 	

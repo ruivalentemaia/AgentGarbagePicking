@@ -21,6 +21,7 @@ public class Options {
 	private boolean allTrucksStartingSamePosition;
 	private boolean allowPlannerAgentToCreateTrucks;
 	private boolean activeConsolePrinting;
+	private boolean agentsKnowMap;
 	
 	private String optionsFilePath = System.getProperty("user.dir") + "/config/options";
 	private String optionsFile;
@@ -68,6 +69,14 @@ public class Options {
 		this.optionsFile = optionsFile;
 	}
 
+	public boolean isAgentsKnowMap() {
+		return agentsKnowMap;
+	}
+
+	public void setAgentsKnowMap(boolean agentsKnowMap) {
+		this.agentsKnowMap = agentsKnowMap;
+	}
+
 	/*
 	 * Export Options to XML file. 
 	 */
@@ -91,6 +100,10 @@ public class Options {
 		Element activeConsolePrinting = doc.createElement("activeConsolePrinting");
 		activeConsolePrinting.appendChild(doc.createTextNode(Boolean.toString(this.activeConsolePrinting)));
 		rootElement.appendChild(activeConsolePrinting);
+		
+		Element agentsKnowMap = doc.createElement("agentsKnowMap");
+		agentsKnowMap.appendChild(doc.createTextNode(Boolean.toString(this.agentsKnowMap)));
+		rootElement.appendChild(agentsKnowMap);
 		
 		File f = new File(this.optionsFilePath);
 		f.setExecutable(true);
@@ -127,6 +140,9 @@ public class Options {
 		
 		String activeConsolePrinting = doc.getElementsByTagName("activeConsolePrinting").item(0).getTextContent();
 		this.activeConsolePrinting = Boolean.parseBoolean(activeConsolePrinting);
+		
+		String agentsKnowMap = doc.getElementsByTagName("agentsKnowMap").item(0).getTextContent();
+		this.agentsKnowMap = Boolean.parseBoolean(agentsKnowMap);
 	}
 	
 	
@@ -137,5 +153,6 @@ public class Options {
 		this.setAllTrucksStartingSamePosition(true);
 		this.setAllowPlannerAgentToCreateTrucks(true);
 		this.setActiveConsolePrinting(false);
+		this.setAgentsKnowMap(true);
 	}
 }
