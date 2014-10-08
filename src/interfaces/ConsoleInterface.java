@@ -575,6 +575,13 @@ public class ConsoleInterface {
 		if( (this.trucks.size() > 0) && (this.map != null) ) {
 			
 			this.map.printCityMapString();
+			this.options.importOptions("options.xml");
+			
+			//creates JADE AgentContainer.
+			Profile p = new ProfileImpl();
+			p.setParameter(Profile.MAIN_PORT, "8888");
+			Runtime rt = Runtime.instance();
+			AgentContainer ac = rt.createMainContainer(p);
 			
 			Iterator<Truck> itTruck = this.trucks.iterator();
 			while(itTruck.hasNext()){
@@ -583,20 +590,14 @@ public class ConsoleInterface {
 				this.map.getTrucks().add(t);
 			}
 			
-			Planner planner = new Planner(this.map, this.trucks);
-			
-			//creates JADE AgentContainer.
-			Profile p = new ProfileImpl();
-			p.setParameter(Profile.MAIN_PORT, "8888");
-			Runtime rt = Runtime.instance();
-			AgentContainer ac = rt.createMainContainer(p);
-			
 			/*
 			 * If the options are set to the mode where Agents have knowledge
 			 * of the full CityMap object, then it starts the Trucks and the 
 			 * PlannerAgent.
 			 */
 			if(this.options.isAgentsKnowMap()){
+				
+				Planner planner = new Planner(this.map, this.trucks);
 				
 				//adds all Trucks to the AgentContainer
 				List<String> truckAgents = new ArrayList<String>();
@@ -613,7 +614,7 @@ public class ConsoleInterface {
 						System.err.println("Error launching " + agent.TruckAgent.class.getName());
 					}
 				}
-				
+					
 				//adds TruckAgents to the Planner object.
 				planner.setTruckAgents(truckAgents);
 				
@@ -627,6 +628,7 @@ public class ConsoleInterface {
 					System.err.println("Error launching " + planner.getClass().getName());
 				}
 			}
+				
 			
 			/*
 			 * In case Options are set for the Agents not to know the full
@@ -649,8 +651,6 @@ public class ConsoleInterface {
 					}
 				}
 			}
-			
-			ac.kill();
 			
 		}
 		else return;
@@ -705,10 +705,12 @@ public class ConsoleInterface {
 				break;
 			case 'b':
 				done = true;
+				options.export("options.xml");
 				break;
 			
 			case 'B':
 				done = true;
+				options.export("options.xml");
 				break;
 			
 			//Other input.
@@ -984,9 +986,9 @@ public class ConsoleInterface {
 	public ConsoleInterface() throws IOException, ParserConfigurationException, TransformerException, SAXException, ControllerException {
 		Options options = new Options();
 		
-		File optFile = new File(options.getOptionsFilePath() + "/" + options.getOptionsFile());
+		File optFile = new File(options.getOptionsFilePath() + "/" + "options.xml");
 		if(optFile.exists()){
-			options.importOptions(options.getOptionsFile());
+			options.importOptions("options.xml");
 			this.options = options;
 		}
 		else {
@@ -1003,11 +1005,17 @@ public class ConsoleInterface {
 		
 		int mainMenuOption = 0;
 		
-		do {
+		while(mainMenuOption != 5){
 			mainMenuOption = this.buildMainMenu();
 			mainMenuOption = this.treatMainMenuSelectedOption(mainMenuOption);
 			if(mainMenuOption >= 1 && mainMenuOption <= 4)
 				mainMenuOption = this.treatMainMenuSelectedOption(mainMenuOption);
+		}
+		
+		/*
+		do {
+			
 		} while(mainMenuOption != 5);
+		*/
 	}
 }

@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -360,7 +362,7 @@ public class Truck {
 	 * Remove repeated Goals from the goals list.
 	 */
 	public void removeRepeatedGoals() {
-		SortedSet<Goal> goals = new TreeSet<Goal>(new Comparator<Goal>() {
+		SortedSet<Goal> goals = Collections.synchronizedSortedSet(new TreeSet<Goal>(new Comparator<Goal>() {
 		    @Override
 		    public int compare(Goal g1, Goal g2) {
 		        if ( (g1.getStartPoint().getX() == g2.getStartPoint().getX()) &&
@@ -371,7 +373,7 @@ public class Truck {
 		        }
 		        return 1;
 		    }
-		});
+		}));
 		goals.addAll(this.goals);
 		
 		this.goals.clear();
@@ -635,44 +637,50 @@ public class Truck {
 	 * Truck can transport.
 	 */
 	public void buildGoalsList() {
-		Iterator<GarbageContainer> gcIt = this.completeCityMap.getGarbageContainers().iterator();
 		int goalCounter = 1;
-		while(gcIt.hasNext()){
-			GarbageContainer gc = gcIt.next();
-			if(gc.getType().equals(this.getGarbageType())){
-				//going.
-				Point gcPos = gc.getPosition();
-				Road r = this.completeCityMap.selectRoadFromGarbageContainer(gcPos);
-				Point finalPos = this.completeCityMap.selectPointFromRoad(r, gcPos);
-				Goal g = new Goal(goalCounter, this.startPosition, finalPos);
-				Path p = new Path(goalCounter);
-				g.setBestPath(p);
-				this.goals.add(g);
-				goalCounter++;
-				this.garbageContainersToGoTo.add(gc);
-				
-				//coming back to deliver garbage.
-				if(gc.getCurrentOccupation() == this.getMaxCapacity()){
-					Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
-					Path path = new Path(goalCounter);
-					gBack.setBestPath(path);
-					this.goals.add(gBack);
-					goalCounter++;
-				}
-				
-				else if(gc.getCurrentOccupation() > this.getMaxCapacity()){
-					Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
-					Path path = new Path(goalCounter);
-					gBack.setBestPath(path);
-					this.goals.add(gBack);
-					goalCounter++;
-				}
-				
-				else if(gc.getCurrentOccupation() < this.getMaxCapacity()) {
-					if(this.options.isActiveConsolePrinting())
-						System.out.println("TRUCK can go to the next Goal !");
+		List<GarbageContainer> gContainers = new CopyOnWriteArrayList<GarbageContainer>(this.completeCityMap.getGarbageContainers());
+		synchronized(gContainers) {
+			Iterator<GarbageContainer> gcIt = gContainers.iterator();
+			while(gcIt.hasNext()){
+				GarbageContainer gc = gcIt.next();
+				if(gc.getType() != null && this.getGarbageType() != null) {
+					if(gc.getType().equals(this.getGarbageType())){
+						//going.
+						Point gcPos = gc.getPosition();
+						Road r = this.completeCityMap.selectRoadFromGarbageContainer(gcPos);
+						Point finalPos = this.completeCityMap.selectPointFromRoad(r, gcPos);
+						Goal g = new Goal(goalCounter, this.startPosition, finalPos);
+						Path p = new Path(goalCounter);
+						g.setBestPath(p);
+						this.goals.add(g);
+						goalCounter++;
+						this.garbageContainersToGoTo.add(gc);
+						
+						//coming back to deliver garbage.
+						if(gc.getCurrentOccupation() == this.getMaxCapacity()){
+							Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
+							Path path = new Path(goalCounter);
+							gBack.setBestPath(path);
+							this.goals.add(gBack);
+							goalCounter++;
+						}
+						
+						else if(gc.getCurrentOccupation() > this.getMaxCapacity()){
+							Goal gBack = new Goal(goalCounter, finalPos, this.startPosition);
+							Path path = new Path(goalCounter);
+							gBack.setBestPath(path);
+							this.goals.add(gBack);
+							goalCounter++;
+						}
+						
+						else if(gc.getCurrentOccupation() < this.getMaxCapacity()) {
+							if(this.options.isActiveConsolePrinting())
+								System.out.println("TRUCK can go to the next Goal !");
+						}
+					}
 				}
 			}
+				
 		}
 		this.removeRepeatedGoals();
 	}
@@ -730,10 +738,11 @@ public class Truck {
 			}
 			
 			Point fivePositionsAgo = new Point(0,0);
-			if(iteration > 5){
+			if(iteration > 5 && this.pathToBeWalked.size() >= 5){
 				fivePositionsAgo = this.pathToBeWalked.get(this.pathToBeWalked.size() - 5);
 			}
 			
+			this.currentPosition.setType(this.getCompleteCityMap().getPointType(this.currentPosition));
 			this.pathToBeWalked.add(this.currentPosition);
 			
 			if( (bestNode.getX() == greedy.getGoal().getEndPoint().getX()) &&
@@ -743,15 +752,17 @@ public class Truck {
 					System.out.println("Path Planning complete for Goal " + g.getId() + " of Truck " + this.getTruckName() + " complete.");
 				
 				this.currentPosition = bestNode;
+				this.currentPosition.setType(this.getCompleteCityMap().getPointType(this.currentPosition));
 				this.pathToBeWalked.add(this.currentPosition);
 				break;
 			}
 			else {
 				this.currentPosition = bestNode;
+				this.currentPosition.setType(this.getCompleteCityMap().getPointType(this.currentPosition));
 				greedy.getClosedList().add(bestNode);
 				
 				List<Point> neighbours = new ArrayList<Point>();
-				neighbours = this.completeCityMap.selectNeighbourPoints(bestNode);
+				neighbours = this.completeCityMap.selectNeighbourPoints(this.currentPosition);
 				
 				Iterator<Point> neighboursIt = neighbours.iterator();
 				
@@ -839,7 +850,8 @@ public class Truck {
 		path.setPoints(this.pathToBeWalked);
 		path.setLength(this.pathToBeWalked.size()-sizeOfCurrentPath);
 		g.setBestPath(path);
-		this.goals.get(goalIndex).setBestPath(path);		
+		if(goalIndex > 0)
+			this.goals.get(goalIndex).setBestPath(path);		
 	}
 	
 	
@@ -848,21 +860,30 @@ public class Truck {
 	 * in the goals List.
 	 */
 	public void buildTotalPathPlanning(int whichTime) {
-		Iterator<Goal> itGoal = this.goals.iterator();
 		Goal[] goalsTemp = new Goal[this.goals.size()];
 		int counter = 0;
 		
-		if(this.options.isActiveConsolePrinting())
-			System.out.println("\n");
-		
-		while(itGoal.hasNext()){
-			Goal g = itGoal.next();
-			goalsTemp[counter] = g;
-			counter++;
-			
-			if(this.options.isActiveConsolePrinting())
-				System.out.println("Goal " + g.getId() + " = (" + g.getEndPoint().getX() + ", " + g.getEndPoint().getY() + ")");
+		List<Goal> goalsList = new CopyOnWriteArrayList<Goal>(this.goals);
+		synchronized(goalsList) {
+			Iterator<Goal> itGoal = goalsList.iterator();
+			while(itGoal.hasNext()){
+				Goal g = itGoal.next();
+				if(counter < goalsTemp.length) {
+					goalsTemp[counter] = g;
+					counter++;
+				}
+				else {
+					counter = goalsTemp.length - 1;
+					goalsTemp[counter] = g;
+				}
+				
+				if(this.options.isActiveConsolePrinting())
+					System.out.println("Goal " + g.getId() + " = (" + g.getEndPoint().getX() + ", " + g.getEndPoint().getY() + ")");
+			}
 		}
+	
+		if(this.options.isActiveConsolePrinting())
+			System.out.println("\n");	
 		
 		this.orderGoalById(goalsTemp);
 		

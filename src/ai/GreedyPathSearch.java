@@ -106,7 +106,11 @@ public class GreedyPathSearch {
 	 */
 	public Point getMinimumValue(int n){
 		double[] heuristics = this.orderFHeuristic();
-		double minimumValue = heuristics[n];
+		double minimumValue = -1;
+		if(heuristics.length > n){
+			minimumValue = heuristics[n];
+		}
+		else minimumValue = heuristics[n-1];
 		return this.fHeuristic.get(minimumValue);
 	}
 	

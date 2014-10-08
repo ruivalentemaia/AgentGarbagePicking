@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -31,6 +34,7 @@ import map.GarbageContainer;
 import map.Point;
 import map.Road;
 import ai.Goal;
+import ai.Options;
 import ai.Path;
 import ai.Plan;
 import units.Truck;
@@ -50,6 +54,7 @@ public class TruckAgent extends Agent{
 	
 	private Truck truck;
 	private String truckFilename;
+	private Options options;
 	
 	public Truck getTruck() {
 		return truck;
@@ -78,9 +83,22 @@ public class TruckAgent extends Agent{
 		
 		System.out.println("My name is " + this.getAID().getName() + " and I'm active now.");
 		
-		addBehaviour(new readyBehaviour(this));
+		this.options = new Options();
+		try {
+			this.options.importOptions("options.xml");
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			e.printStackTrace();
+		}
 		
-		addBehaviour(new receiveOptimalPlan(this, this.truck, this.truckFilename));
+		if(options.isAgentsKnowMap()) {
+			addBehaviour(new readyBehaviour(this));
+			addBehaviour(new receiveOptimalPlan(this, this.truck, this.truckFilename));
+		}
+		
+		else {
+			addBehaviour(new noMapBehaviour(this, this.truck));
+		}
+		
 	}
 	
 	protected void takeDown() {
@@ -652,6 +670,10 @@ public class TruckAgent extends Agent{
 		private boolean finished = false;
 		private int state;
 		private Truck truck;
+		private HashMap<GarbageContainer, Double> garbageCollected;
+		private CityMap unknownMap;
+		private CityMap fullMap;
+		private int counter;
 		
 		public boolean isFinished() {
 			return finished;
@@ -678,9 +700,41 @@ public class TruckAgent extends Agent{
 		}
 		
 		
-		public noMapBehaviour(Truck t) {
+		public noMapBehaviour(Agent a, Truck t) {
+			super(a);
+			
 			this.truck = t;
+			
+			List<Goal> goals = new ArrayList<Goal>();
+			this.truck.setGoals(goals);
+			
+			List<Point> pathToBeWalked = new ArrayList<Point>();
+			this.truck.setPathToBeWalked(pathToBeWalked);
+			
+			List<GarbageContainer> garbageContainersToGoTo = new ArrayList<GarbageContainer>();
+			this.truck.setGarbageContainersToGoTo(garbageContainersToGoTo);
+			
+			this.truck.setCurrentPosition(this.truck.getStartPosition());
+			
 			this.state = 1;
+			this.garbageCollected = new HashMap<GarbageContainer, Double>();
+			this.unknownMap = new CityMap();
+			this.counter = 0;
+			
+			this.fullMap = this.truck.getCompleteCityMap();
+			this.truck.setCompleteCityMap(unknownMap);
+			this.truck.getCompleteCityMap().getPoints().add(this.truck.getCurrentPosition());
+			
+			//count how many GCs the TruckAgent is supposed to get to.
+			List<GarbageContainer> gContainers = new CopyOnWriteArrayList<GarbageContainer> (this.fullMap.getGarbageContainers());
+			synchronized(gContainers){
+				Iterator<GarbageContainer> itGC = gContainers.iterator();
+				while(itGC.hasNext()){
+					GarbageContainer gc = itGC.next();
+					if(gc.getType().equals(this.truck.getGarbageType()))
+						this.counter++;
+				}
+			}
 		}
 
 		@Override
@@ -690,27 +744,12 @@ public class TruckAgent extends Agent{
 				 * TruckAgent is moving.
 				 */
 				case 1:
-					HashMap<GarbageContainer, Double> garbageCollected = new HashMap<GarbageContainer, Double>();
-					CityMap unknownMap = new CityMap();
-					CityMap fullMap = this.truck.getCompleteCityMap();
-					
-					this.truck.setCompleteCityMap(unknownMap);
-					this.truck.getCompleteCityMap().getPoints().add(this.truck.getCurrentPosition());
-					
-					//count how many GCs the TruckAgent is supposed to get to.
-					Iterator<GarbageContainer> itGC = fullMap.getGarbageContainers().iterator();
-					int counter = 0;
-					while(itGC.hasNext()){
-						GarbageContainer gc = itGC.next();
-						if(gc.getType().equals(this.truck.getGarbageType()))
-							counter++;
-					}
-					
 					/*
 					 * stop condition: the number of GCs hit is equal to the number 
 					 * of GCs that the TruckAgent is supposed to hit.
 					 */
-					while(garbageCollected.size() < counter){
+					while(garbageCollected.size() < this.counter){
+						
 						int currentX = this.truck.getCurrentPosition().getX();
 						int currentY = this.truck.getCurrentPosition().getY();
 						
@@ -719,185 +758,334 @@ public class TruckAgent extends Agent{
 						int previousY = currentY - 1;
 						int nextY = currentY + 1;
 						
-						//checks if there is some GarbageContainer around this position.
-						Iterator<GarbageContainer> itGContainer = fullMap.getGarbageContainers().iterator();
-						while(itGContainer.hasNext()){
+						if(this.truck.getCurrentOccupation() == this.truck.getMaxCapacity()){
+							Goal g = new Goal(this.truck.getGoals().size() + 1, 
+											  this.truck.getCurrentPosition(),
+											  this.truck.getStartPosition());
+							this.truck.getGoals().add(g);
 							
-							GarbageContainer gCont = itGContainer.next();
-							int gContX = gCont.getPosition().getX();
-							int gContY = gCont.getPosition().getY();
+							g.setBestPath(new Path(1));
+							this.truck.buildTotalPathPlanning(2);
+						}
+						
+						if(this.truck.getGoals().size() > 0) {
 							
-							if( ( (gContX == currentX) || (gContX == previousX) || (gContX == nextX) ) &&
-								( (gContY == currentY) || (gContY == previousY) || (gContY == nextY)) ) {
-								
-								if(gCont.getType().equals(this.truck.getGarbageType())) {
-							
-									this.truck.getCompleteCityMap().getGarbageContainers().add(gCont);
-									double currentOccupation = gCont.getCurrentOccupation();
-									if(currentOccupation <= (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())){
-										this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + currentOccupation);
-										gCont.setCurrentOccupation(0);
-										garbageCollected.put(gCont, currentOccupation);
-									}
-									else {
-										double valueToTake = this.truck.getMaxCapacity() - this.truck.getCurrentOccupation();
-										this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + valueToTake);
-										gCont.setCurrentOccupation(gCont.getCurrentOccupation() - valueToTake);
-										garbageCollected.put(gCont, valueToTake);
+							List<Point> pathToBeWalked = new CopyOnWriteArrayList<Point>(this.truck.getPathToBeWalked());
+							synchronized(pathToBeWalked) {
+								Iterator<Point> itPathToBeWalked = pathToBeWalked.iterator();
+								while(itPathToBeWalked.hasNext()){
+									Point nextPoint = itPathToBeWalked.next();
+									String pointType = this.fullMap.getPointType(nextPoint);
+									
+									if(pointType != "") nextPoint.setType(pointType);
+									else nextPoint.setType("ROAD");
+									
+									this.truck.getPathWalked().add(nextPoint);
+									this.truck.setCurrentPosition(nextPoint);
+									
+									List<GarbageContainer> gContainers = new CopyOnWriteArrayList<GarbageContainer>(this.fullMap.getGarbageContainers());
+									synchronized(gContainers){
+										Iterator<GarbageContainer> itGContainer = gContainers.iterator();
+										while(itGContainer.hasNext()){
+											GarbageContainer gCont = itGContainer.next();
+											int gContX = gCont.getPosition().getX();
+											int gContY = gCont.getPosition().getY();
+											
+											if( ( (gContX == currentX) || (gContX == previousX) || (gContX == nextX) ) &&
+												( (gContY == currentY) || (gContY == previousY) || (gContY == nextY)) ) {
+												
+												if(gCont.getType().equals(this.truck.getGarbageType())) {
+											
+													this.truck.getCompleteCityMap().getGarbageContainers().add(gCont);
+													double currentOccupation = gCont.getCurrentOccupation();
+													
+													if( (currentOccupation <= (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
+														(currentOccupation > 0)) {
+														this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + currentOccupation);
+														gCont.setCurrentOccupation(0);
+														if(currentOccupation > 0) {
+															this.garbageCollected.put(gCont, currentOccupation);
+															System.out.println(getAID().getLocalName() + " : Collected " + currentOccupation 
+																	+ " kg of garbage in (" + gCont.getPosition().getX() 
+																	+ ", " + gCont.getPosition().getY() + ").");
+														}
+														else break;
+													}
+													
+													else if((currentOccupation > (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
+														(currentOccupation > 0)){
+														double valueToTake = this.truck.getMaxCapacity() - this.truck.getCurrentOccupation();
+														this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + valueToTake);
+														gCont.setCurrentOccupation(gCont.getCurrentOccupation() - valueToTake);
+														if(valueToTake > 0) {
+															this.garbageCollected.put(gCont, valueToTake);
+															System.out.println(getAID().getLocalName() + " : Collected " + valueToTake 
+																	+ " kg of garbage in (" + gCont.getPosition().getX() 
+																	+ ", " + gCont.getPosition().getY() + ").");
+														}
+														else break;
+													}
+													else break;
+												}
+											}
+										}
 									}
 								}
-								
-								/*
-								 * sends message to all Trucks of this GarbageType saying
-								 * it found one.
-								 */
-								else {
-									//TODO
+							}
+						}
+						List<Point> nPathToBeWalked = new ArrayList<Point>();
+						this.truck.setPathToBeWalked(nPathToBeWalked);
+						
+						if(this.getAgent().getQueueSize() > 0) {
+							this.state = 2;
+							break;
+						}
+						
+						else {
+							//checks if there is some GarbageContainer around this position.
+							List<GarbageContainer> gContainers = new CopyOnWriteArrayList<GarbageContainer>(this.fullMap.getGarbageContainers());
+							boolean msgSent = false;
+							synchronized(gContainers){
+								Iterator<GarbageContainer> itGContainer = gContainers.iterator();
+								while(itGContainer.hasNext()){
+									GarbageContainer gCont = itGContainer.next();
+									int gContX = 0;
+									gContX = gCont.getPosition().getX();
+									int gContY = 0;
+									gContY = gCont.getPosition().getY();
+									
+									if( ( (gContX == currentX) || (gContX == previousX) || (gContX == nextX) ) &&
+										( (gContY == currentY) || (gContY == previousY) || (gContY == nextY)) ) {
+										
+										if(gCont.getType().equals(this.truck.getGarbageType())) {
+									
+											this.truck.getCompleteCityMap().getGarbageContainers().add(gCont);
+											double currentOccupation = gCont.getCurrentOccupation();
+											
+											if( (currentOccupation <= (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
+												(currentOccupation > 0)){
+												this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + currentOccupation);
+												gCont.setCurrentOccupation(0);
+												if(currentOccupation > 0) {
+													this.garbageCollected.put(gCont, currentOccupation);
+													System.out.println(getAID().getLocalName() + " : Collected " + currentOccupation + " kg of garbage in (" + gCont.getPosition().getX() + ", " + gCont.getPosition().getY() + ").");
+												}
+												else break;
+											}
+											
+											else if((currentOccupation > (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
+													(currentOccupation > 0)){
+												double valueToTake = this.truck.getMaxCapacity() - this.truck.getCurrentOccupation();
+												this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + valueToTake);
+												gCont.setCurrentOccupation(gCont.getCurrentOccupation() - valueToTake);
+												if(valueToTake > 0){
+													this.garbageCollected.put(gCont, valueToTake);
+													System.out.println(getAID().getLocalName() + " : Collected " + valueToTake + " kg of garbage in (" + gCont.getPosition().getX() + ", " + gCont.getPosition().getY() + ").");
+												}
+												else break;
+											}
+											else break;
+										}
+										
+										/*
+										 * sends message to all Trucks of this GarbageType saying
+										 * it found one.
+										 */
+										else {
+											ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+											msg.setOntology("FoundGC");
+											msg.setContent(gCont.getPosition().getX() 
+												  + ", " + gCont.getPosition().getY() 
+												  + "," + gCont.getCurrentOccupation()
+												  + ", " + gCont.getMaxCapacity()
+												  + "," + gCont.getType());
+											
+											AMSAgentDescription [] agents = null;
+									        try {
+									            SearchConstraints c = new SearchConstraints();
+									            c.setMaxResults ( new Long(-1) );
+									            agents = AMSService.search( this.getAgent(), new AMSAgentDescription (), c );
+									        }
+									        catch (Exception e) { e.printStackTrace();}
+											
+									        String t = getAID().getLocalName();
+									        for (int i=0; i<agents.length;i++) {
+									            AID agentID = agents[i].getName();
+									            if(!agentID.getLocalName().equals(t)) {
+									            	msg.addReceiver(agentID);
+									            }
+									        }
+									        
+									        send(msg);
+									        
+									        msgSent = true;
+									        System.out.println(getAID().getLocalName() + " : Sent global message warning of GarbageContainer of type " + gCont.getType() + " at (" + gCont.getPosition().getX() + ", " + gCont.getPosition().getY() + ").");
+										}
+									}
+									if(msgSent) break;
+								}
+							}
+							
+							/*
+							 * Checks where to move.
+							 */
+							
+							
+							
+							Point up = new Point(currentX, previousY);
+							Point down = new Point(currentX, nextY);
+							Point left = new Point(previousX, currentY);
+							Point right = new Point(nextX, currentY);
+							
+							boolean isUpRoad = false;
+							boolean isDownRoad = false;
+							boolean isLeftRoad = false;
+							boolean isRightRoad = false;
+							
+							if(this.fullMap.checkIfPointIsRoadOrCrossroads(up)) isUpRoad = true;
+							if(this.fullMap.checkIfPointIsRoadOrCrossroads(down)) isDownRoad = true;
+							if(this.fullMap.checkIfPointIsRoadOrCrossroads(left)) isLeftRoad = true;
+							if(this.fullMap.checkIfPointIsRoadOrCrossroads(right)) isRightRoad = true;
+							
+							//the TruckAgent is on a CROSSROADS.
+							if(isUpRoad && isDownRoad && isLeftRoad && isRightRoad){
+								Random r = new Random();
+								int val = r.nextInt(4-1) + 1;
+								switch(val) {
+									//move to the left of the map.
+									case 1:
+										if(!this.truck.hasPointBeenWalked(left)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(left);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 2;
+										break;
+									
+									//move up on the map.
+									case 2:
+										if(!this.truck.hasPointBeenWalked(up)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(up);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 3;
+										break;
+									
+									//move to the right of the map.
+									case 3:
+										if(!this.truck.hasPointBeenWalked(right)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(right);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 4;
+										break;
+									
+									//move down on the map.
+									case 4:
+										if(!this.truck.hasPointBeenWalked(down)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(down);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 1;
+										break;
+									
+									default:
+										break;
+								}
+							}
+							
+							//the TruckAgent is somewhere where it can move up or down.
+							else if(isUpRoad && isDownRoad){
+								Random r = new Random();
+								int val = r.nextInt(2-1) + 1;
+								switch(val){
+									case 1:
+										if(!this.truck.hasPointBeenWalked(up)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(up);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 2;
+										break;
+									case 2:
+										if(!this.truck.hasPointBeenWalked(down)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(down);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 1;
+										break;
+									default:
+										break;
+								}
+							}
+							//the TruckAgent is somewhere where it can move left or right.
+							else if(isLeftRoad && isRightRoad){
+								Random r = new Random();
+								int val = r.nextInt(2-1) + 1;
+								switch(val){
+									case 1:
+										if(!this.truck.hasPointBeenWalked(left)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(left);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 2;
+										break;
+									case 2:
+										if(!this.truck.hasPointBeenWalked(right)){
+											this.truck.getPathWalked().add(new Point(currentX, currentY));
+											this.truck.setCurrentPosition(right);
+											System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+										}
+										else val = 1;
+										break;
+									default:
+										break;
+								}
+							}
+							//the TruckAgent is somewhere where it can only move up.
+							else if(isUpRoad && !isDownRoad){
+								if(!this.truck.hasPointBeenWalked(up)){
+									this.truck.getPathWalked().add(new Point(currentX, currentY));
+									this.truck.setCurrentPosition(up);
+									System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+								}
+							}
+							//the TruckAgent is somewhere where it can only move down.
+							else if(!isUpRoad && isDownRoad) {
+								if(!this.truck.hasPointBeenWalked(down)){
+									this.truck.getPathWalked().add(new Point(currentX, currentY));
+									this.truck.setCurrentPosition(down);
+									System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+								}
+							}
+							//the TruckAgent is somewhere where it can only move left.
+							else if(isLeftRoad && !isRightRoad){
+								if(!this.truck.hasPointBeenWalked(left)){
+									this.truck.getPathWalked().add(new Point(currentX, currentY));
+									this.truck.setCurrentPosition(left);
+									System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
+								}
+							}
+							//the TruckAgent is somewhere where it can only move right.
+							else if(!isLeftRoad && isRightRoad){
+								if(!this.truck.hasPointBeenWalked(right)){
+									this.truck.getPathWalked().add(new Point(currentX, currentY));
+									this.truck.setCurrentPosition(right);
+									System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
 								}
 							}
 						}
-						
-						/*
-						 * Checks where to move.
-						 */
-						Point up = new Point(currentX, previousY);
-						Point down = new Point(currentX, nextY);
-						Point left = new Point(previousX, currentY);
-						Point right = new Point(nextX, currentY);
-						
-						boolean isUpRoad = false;
-						boolean isDownRoad = false;
-						boolean isLeftRoad = false;
-						boolean isRightRoad = false;
-						
-						if(fullMap.checkIfPointIsRoadOrCrossroads(up)) isUpRoad = true;
-						if(fullMap.checkIfPointIsRoadOrCrossroads(down)) isDownRoad = true;
-						if(fullMap.checkIfPointIsRoadOrCrossroads(left)) isLeftRoad = true;
-						if(fullMap.checkIfPointIsRoadOrCrossroads(right)) isRightRoad = true;
-						
-						//the TruckAgent is on a CROSSROADS.
-						if(isUpRoad && isDownRoad && isLeftRoad && isRightRoad){
-							Random r = new Random();
-							int val = r.nextInt(4-1) + 1;
-							switch(val) {
-								//move to the left of the map.
-								case 1:
-									if(!this.truck.hasPointBeenWalked(left)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(left);
-									}
-									else val = 2;
-									break;
-								
-								//move up on the map.
-								case 2:
-									if(!this.truck.hasPointBeenWalked(up)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(up);
-									}
-									else val = 3;
-									break;
-								
-								//move to the right of the map.
-								case 3:
-									if(!this.truck.hasPointBeenWalked(right)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(right);
-									}
-									else val = 4;
-									break;
-								
-								//move down on the map.
-								case 4:
-									if(!this.truck.hasPointBeenWalked(down)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(down);
-									}
-									else val = 1;
-									break;
-								
-								default:
-									break;
-							}
-						}
-						
-						//the TruckAgent is somewhere where it can move up or down.
-						else if(isUpRoad && isDownRoad){
-							Random r = new Random();
-							int val = r.nextInt(2-1) + 1;
-							switch(val){
-								case 1:
-									if(!this.truck.hasPointBeenWalked(up)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(up);
-									}
-									else val = 2;
-									break;
-								case 2:
-									if(!this.truck.hasPointBeenWalked(down)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(down);
-									}
-									else val = 1;
-									break;
-								default:
-									break;
-							}
-						}
-						//the TruckAgent is somewhere where it can move left or right.
-						else if(isLeftRoad && isRightRoad){
-							Random r = new Random();
-							int val = r.nextInt(2-1) + 1;
-							switch(val){
-								case 1:
-									if(!this.truck.hasPointBeenWalked(left)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(left);
-									}
-									else val = 2;
-									break;
-								case 2:
-									if(!this.truck.hasPointBeenWalked(right)){
-										this.truck.getPathWalked().add(new Point(currentX, currentY));
-										this.truck.setCurrentPosition(right);
-									}
-									else val = 1;
-									break;
-								default:
-									break;
-							}
-						}
-						//the TruckAgent is somewhere where it can only move up.
-						else if(isUpRoad && !isDownRoad){
-							if(!this.truck.hasPointBeenWalked(up)){
-								this.truck.getPathWalked().add(new Point(currentX, currentY));
-								this.truck.setCurrentPosition(up);
-							}
-						}
-						//the TruckAgent is somewhere where it can only move down.
-						else if(!isUpRoad && isDownRoad) {
-							if(!this.truck.hasPointBeenWalked(down)){
-								this.truck.getPathWalked().add(new Point(currentX, currentY));
-								this.truck.setCurrentPosition(down);
-							}
-						}
-						//the TruckAgent is somewhere where it can only move left.
-						else if(isLeftRoad && !isRightRoad){
-							if(!this.truck.hasPointBeenWalked(left)){
-								this.truck.getPathWalked().add(new Point(currentX, currentY));
-								this.truck.setCurrentPosition(left);
-							}
-						}
-						//the TruckAgent is somewhere where it can only move right.
-						else if(!isLeftRoad && isRightRoad){
-							if(!this.truck.hasPointBeenWalked(right)){
-								this.truck.getPathWalked().add(new Point(currentX, currentY));
-								this.truck.setCurrentPosition(right);
-							}
-						}
-						
-						
 					}
+					
+					if(this.counter == this.garbageCollected.size()){
+						this.state = 4;
+					}
+					
 					break;
 				
 				/*
@@ -905,8 +1093,51 @@ public class TruckAgent extends Agent{
 				 * GarbageContainer of this TruckAgent's garbageType.
 				 */
 				case 2:
-					break;
+					MessageTemplate m1 = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+					MessageTemplate m2 = MessageTemplate.MatchOntology("FoundGC");
 					
+					MessageTemplate m1_and_m2 = MessageTemplate.and(m1, m2);
+					
+					ACLMessage msg = receive(m1_and_m2);
+					
+					if(msg != null){
+						String content = msg.getContent();
+						String[] parts = content.split(",");
+						
+						/*
+						 * gCont.getPosition().getX() 
+						 * + ", " + gCont.getPosition().getY() 
+						 * + "," + gCont.getCurrentOccupation() 
+						 * + "," + gCont.getType())
+						 */
+						
+						Point position = new Point(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+						double cOccupation = Double.parseDouble(parts[2]);
+						double maxCapacity = Double.parseDouble(parts[3]);
+						String type = parts[3];
+						int gcId = this.truck.getGarbageContainersToGoTo().size() + 1;
+						
+						if(type.equals(this.truck.getGarbageType())){
+							GarbageContainer gc = new GarbageContainer(gcId, type, maxCapacity, cOccupation, position);
+							this.truck.getGarbageContainersToGoTo().add(gc);
+							
+							int id = this.truck.getGoals().size() + 1;
+							Goal g = new Goal(id, this.truck.getCurrentPosition(), position);
+							g.setBestPath(new Path(id));
+							
+							this.truck.buildTotalPathPlanning(2);
+						}
+						
+						this.state = 1;
+					}
+					else block();
+					break;
+				
+				case 3:
+					this.finished = true;
+					this.state = 4;
+					break;
+				
 				default:
 					break;
 			}

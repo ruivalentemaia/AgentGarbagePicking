@@ -585,6 +585,20 @@ public class CityMap {
 		}
 	}
 	
+	/*
+	 * Given a Point returns its type.
+	 */
+	public String getPointType(Point p){
+		Iterator<Point> itPoints = this.points.iterator();
+		while(itPoints.hasNext()){
+			Point point = itPoints.next();
+			if(p.getX() == point.getX() && p.getY() == point.getY()){
+				return point.getType();
+			}
+		}
+		return "";
+	}
+	
 	
 	/*
 	 * 
