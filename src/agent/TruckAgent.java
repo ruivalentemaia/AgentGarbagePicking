@@ -644,6 +644,7 @@ public class TruckAgent extends Agent{
 							(truckY == gcPosY || truckY == gcPosY - 1 || truckY == gcPosY + 1) &&
 							(diffTruckGCX == 1 || diffTruckGCY == 1) && !(diffTruckGCX == 1 && diffTruckGCY == 1) &&
 							(diffPosX == 1 || diffPosY == 1) && !(diffPosX == 1 && diffPosY == 1) ) {
+							
 							if(!this.plan.getCollectedRegistry().get(pairs.getKey())) {
 								this.truck.collectGarbage(pairs.getKey(), pairs.getValue());
 								this.plan.changeValueOfCollectRegistry(pairs.getKey());

@@ -1317,17 +1317,17 @@ public class TransportationAlgorithm {
 				GarbageContainer gc = itGC.next();
 				if(t.getGarbageType().equals(gc.getType())){
 					double quantityToCollect = this.valuesMatrix[counterLine][counterColumn];
-					if(quantityToCollect > 0) {
-						valuesToCollect.add(quantityToCollect);
-						qToCollect.put(gc, quantityToCollect);
-						cRegistry.put(gc, false);
-						counterColumn++;
-					}
+					valuesToCollect.add(quantityToCollect);
+					qToCollect.put(gc, quantityToCollect);
+					cRegistry.put(gc, false);
+					counterColumn++;
+					
 				}
 			}
 			
 			//checks if it's necessary that another Truck goes there.
 			boolean continueThis = true;
+			
 			itGC = this.garbageContainers.iterator();
 			List<Boolean> continueList = new ArrayList<Boolean>();
 			int counter = 0;
@@ -1336,10 +1336,12 @@ public class TransportationAlgorithm {
 				GarbageContainer gc = itGC.next();
 				if(valuesToCollect.size() > 0){
 					double valueRetrieved = valuesToCollect.get(counter);
-					if(gc.getCurrentOccupation() == valueRetrieved){
+					if((valueRetrieved > 0) && (gc.getCurrentOccupation() == valueRetrieved)){
 						continueThis = false;
 					}
 					continueList.add(continueThis);
+					counter++;
+					if(counter >= valuesToCollect.size()) break;
 				}
 			}
 			

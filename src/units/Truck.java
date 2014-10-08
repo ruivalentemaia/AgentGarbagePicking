@@ -416,9 +416,12 @@ public class Truck {
 			GarbageContainer gContainer = itGC.next();
 			if(gc.getPosition().getX() == gContainer.getPosition().getX() &&
 			   gc.getPosition().getY() == gContainer.getPosition().getY()){
-				gc.setCurrentOccupation(gc.getCurrentOccupation() - quantity);
+				double currentOcc = gc.getCurrentOccupation();
+				if(currentOcc-quantity >= 0){
+					gc.setCurrentOccupation(currentOcc - quantity);
+					gContainer.setCurrentOccupation(currentOcc - quantity);
+				}
 				this.setCurrentOccupation(this.getCurrentOccupation() + quantity);
-				gContainer.setCurrentOccupation(gContainer.getCurrentOccupation() - quantity);
 			}
 		}
 	}
@@ -704,6 +707,11 @@ public class Truck {
 	public void doGreedyPathSearch(Goal g, int sizeOfCurrentPath, int whichTimeWasThisDone){
 		if(whichTimeWasThisDone == 1)
 			this.buildGoalsList();
+		
+		if(g == null){
+			g = new Goal(-1, new Point(-1,-1), new Point(-1, -1));
+		}
+		
 		GreedyPathSearch greedy = new GreedyPathSearch(g);
 		double currentH = g.euclideanDistance(g.getStartPoint(), g.getEndPoint());
 		int iteration = 1;
@@ -738,7 +746,7 @@ public class Truck {
 			}
 			
 			Point fivePositionsAgo = new Point(0,0);
-			if(iteration > 5 && this.pathToBeWalked.size() >= 5){
+			if(iteration > 5){
 				fivePositionsAgo = this.pathToBeWalked.get(this.pathToBeWalked.size() - 5);
 			}
 			
@@ -801,15 +809,17 @@ public class Truck {
 				 * Counts how many times the lastCrossroadCrossed
 				 * comes in the list.
 				 */
-				itPathWalked = this.pathToBeWalked.iterator();
+				List<Point> pathToBeWalkedCopy = new ArrayList<Point>(this.pathToBeWalked);
+				itPathWalked = pathToBeWalkedCopy.iterator();
 				while(itPathWalked.hasNext()){
 					Point p = itPathWalked.next();
 					if( (p.getX() == lastCrossroadCrossed.getCenter().getX()) &&
-							(p.getY() == lastCrossroadCrossed.getCenter().getY()) &&
-							(p.getType().equals("CROSSROADS"))){
+						(p.getY() == lastCrossroadCrossed.getCenter().getY()) &&
+						(p.getType().equals("CROSSROADS"))){
 						skip++;
 					}
 				}
+				
 				
 				/* Removes everything that was inserted after the 
 				 * lastCrossroadCrossed in pathToBeWalked.
@@ -850,8 +860,7 @@ public class Truck {
 		path.setPoints(this.pathToBeWalked);
 		path.setLength(this.pathToBeWalked.size()-sizeOfCurrentPath);
 		g.setBestPath(path);
-		if(goalIndex > 0)
-			this.goals.get(goalIndex).setBestPath(path);		
+		this.goals.get(goalIndex).setBestPath(path);		
 	}
 	
 	
@@ -1417,6 +1426,9 @@ public class Truck {
 		
 		this.options = new Options();
 		this.options.importOptions("options.xml");
+		
+		this.currentOccupation = 0;
+		this.maxCapacity = 0;
 	}
 
 }
