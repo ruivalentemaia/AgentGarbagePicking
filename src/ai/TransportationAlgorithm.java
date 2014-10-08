@@ -1315,12 +1315,14 @@ public class TransportationAlgorithm {
 			List<Double> valuesToCollect = new ArrayList<Double>();
 			while(itGC.hasNext()){
 				GarbageContainer gc = itGC.next();
-				double quantityToCollect = this.valuesMatrix[counterLine][counterColumn];
-				if(quantityToCollect > 0) {
-					valuesToCollect.add(quantityToCollect);
-					qToCollect.put(gc, quantityToCollect);
-					cRegistry.put(gc, false);
-					counterColumn++;
+				if(t.getGarbageType().equals(gc.getType())){
+					double quantityToCollect = this.valuesMatrix[counterLine][counterColumn];
+					if(quantityToCollect > 0) {
+						valuesToCollect.add(quantityToCollect);
+						qToCollect.put(gc, quantityToCollect);
+						cRegistry.put(gc, false);
+						counterColumn++;
+					}
 				}
 			}
 			

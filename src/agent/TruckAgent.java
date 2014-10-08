@@ -91,8 +91,8 @@ public class TruckAgent extends Agent{
 		}
 		
 		if(options.isAgentsKnowMap()) {
-			addBehaviour(new readyBehaviour(this));
-			addBehaviour(new receiveOptimalPlan(this, this.truck, this.truckFilename));
+			addBehaviour(new readyBehaviour(this, this.options));
+			addBehaviour(new receiveOptimalPlan(this, this.truck, this.truckFilename, this.options));
 		}
 		
 		else {
@@ -114,9 +114,19 @@ public class TruckAgent extends Agent{
 	class readyBehaviour extends SimpleBehaviour {
 		private static final long serialVersionUID = 752338739127971004L;
 		private boolean finished = false;
+		private Options options;
 		
-		public readyBehaviour(Agent a){
+		public Options getOptions() {
+			return options;
+		}
+
+		public void setOptions(Options options) {
+			this.options = options;
+		}
+
+		public readyBehaviour(Agent a, Options options){
 			super(a);
+			this.setOptions(options);
 		}
 
 		@Override
@@ -131,7 +141,8 @@ public class TruckAgent extends Agent{
 			ACLMessage msg = receive(m12_and_m3);
 			
 			if(msg != null){
-				System.out.println("Truck " + this.getAgent().getLocalName() + ": Received the " + msg.getContent() + " from " + msg.getSender().getLocalName() + ".");
+				if(this.options.isActiveConsolePrinting())
+					System.out.println("Truck " + this.getAgent().getLocalName() + ": Received the " + msg.getContent() + " from " + msg.getSender().getLocalName() + ".");
 				
 				ACLMessage reply = msg.createReply();
 				
@@ -142,7 +153,8 @@ public class TruckAgent extends Agent{
 				if(replyWith != null) reply.setContent(replyWith);
 				else reply.setContent("Yes. I'm ready.");
 				
-				System.out.println(getAID().getLocalName() + ": Sent the \"Yes. I'm ready.\" reply to " + msg.getSender().getLocalName() + ".");
+				if(this.options.isActiveConsolePrinting())
+					System.out.println(getAID().getLocalName() + ": Sent the \"Yes. I'm ready.\" reply to " + msg.getSender().getLocalName() + ".");
 				reply.setOntology("InitialMessage");
 				
 				send(reply);
@@ -176,12 +188,14 @@ public class TruckAgent extends Agent{
 		private String filename;
 		private int state;
 		private Plan plan;
+		private Options options;
 		
-		public receiveOptimalPlan(Agent a, Truck t, String filename){
+		public receiveOptimalPlan(Agent a, Truck t, String filename, Options options){
 			super(a);
 			this.truck = t;
 			this.filename = filename;
 			this.state = 1;
+			this.options = options;
 		}
 
 		public Truck getTruck() {
@@ -537,6 +551,7 @@ public class TruckAgent extends Agent{
 							t.setStartPosition(startingPoint);
 							t.setCurrentPosition(startingPoint);
 							t.setGoals(this.buildGoalsList(plan));
+							t.setGarbageContainersToGoTo(plan.getAllGarbageContainers());
 							this.plan = plan;
 							t.buildTotalPathPlanning(2);
 							
@@ -550,7 +565,8 @@ public class TruckAgent extends Agent{
 								e.printStackTrace();
 							}
 							
-							System.out.println(getAID().getLocalName() + ": Received and approved the optimal plan from " + msg.getSender().getLocalName() + ".");
+							if(this.options.isActiveConsolePrinting())
+								System.out.println(getAID().getLocalName() + ": Received and approved the optimal plan from " + msg.getSender().getLocalName() + ".");
 							this.state = 2;
 						}
 					}
@@ -586,15 +602,18 @@ public class TruckAgent extends Agent{
 							break;
 						}
 					}
+					if(this.options.isActiveConsolePrinting())
+						System.out.println(getAID().getLocalName() + " : Moved to (" + firstPoint.getX() + ", " + firstPoint.getY() + ").");
 					
-					System.out.println(getAID().getLocalName() + ": Moved to (" + firstPoint.getX() + ", " + firstPoint.getY() + ").");
 					if(this.state == 3) break;
+					
+					this.state = 4;
+					break;
 				}
 				
 				//stop condition.
 				if(this.truck.getPathToBeWalked().isEmpty()){
-					System.out.println(getAID().getLocalName() + ": Finished working and I'm exiting.");
-					this.state = 4;
+					this.state = 5;
 				}
 				break;
 			
@@ -628,7 +647,8 @@ public class TruckAgent extends Agent{
 							if(!this.plan.getCollectedRegistry().get(pairs.getKey())) {
 								this.truck.collectGarbage(pairs.getKey(), pairs.getValue());
 								this.plan.changeValueOfCollectRegistry(pairs.getKey());
-								System.out.println(getAID().getLocalName() + ": Collected " + pairs.getValue() + " kg of garbage in (" + gcPosX + ", " + gcPosY + ").");
+								if(this.options.isActiveConsolePrinting())
+									System.out.println(getAID().getLocalName() + ": Collected " + pairs.getValue() + " kg of garbage in (" + gcPosX + ", " + gcPosY + ").");
 								break;
 							}
 						}
@@ -649,17 +669,58 @@ public class TruckAgent extends Agent{
 					if(counterTrue == size) allCollected = true;
 					if(allCollected) break;
 				}
-				this.state = 2;
+				this.state = 4;
 				break;
+				
+			/*
+			 * Sends a message to PrinterAgent containing the updated information
+			 * of the Truck.
+			 */
+			case 4:
+				ACLMessage printMsg = new ACLMessage(ACLMessage.INFORM);
+				printMsg.setOntology("Print");
+				printMsg.setContent(this.truck.getId() + "," +
+									this.truck.getCurrentPosition().getX() + "," +
+									this.truck.getCurrentPosition().getY() + "," +
+									this.truck.getGarbageType() + "," +
+									this.truck.getCurrentOccupation() + "," +
+									this.truck.getMaxCapacity());
+				
+				AMSAgentDescription [] agents = null;
+		        try {
+		            SearchConstraints c = new SearchConstraints();
+		            c.setMaxResults ( new Long(-1) );
+		            agents = AMSService.search( this.getAgent(), new AMSAgentDescription (), c );
+		        }
+		        catch (Exception e) { e.printStackTrace();}
+				
+		        String t = "printer";
+		        for (int i=0; i<agents.length;i++) {
+		            AID agentID = agents[i].getName();
+		            if(agentID.getLocalName().equals(t)) {
+		            	printMsg.addReceiver(agentID);
+		            }
+		        }
+		        
+		        send(printMsg);
+				
+		        if(this.options.isActiveConsolePrinting())
+		        	System.out.println(getAID().getLocalName() + " : Sent information to printerAgent.");
+		        this.state = 2;
+		        
+				break;
+				
 			default:
-				finished = true;
+				if(this.options.isActiveConsolePrinting())
+					System.out.println(getAID().getLocalName() + ": Finished working and I'm exiting.");
+				this.finished = true;
 				break;
 			}
 		}
 
 		@Override
 		public boolean done() {
-			return finished;
+			return this.finished;
 		}
 	}
 	
@@ -736,6 +797,65 @@ public class TruckAgent extends Agent{
 				}
 			}
 		}
+		
+		/**
+		 * 
+		 * @param cX
+		 * @param pX
+		 * @param nX
+		 * @param cY
+		 * @param pY
+		 * @param nY
+		 */
+		public void collectGarbage(int cX, int pX, int nX, int cY, int pY, int nY){
+			List<GarbageContainer> gContainers = new CopyOnWriteArrayList<GarbageContainer>(this.fullMap.getGarbageContainers());
+			synchronized(gContainers){
+				Iterator<GarbageContainer> itGContainer = gContainers.iterator();
+				while(itGContainer.hasNext()){
+					GarbageContainer gCont = itGContainer.next();
+					int gContX = gCont.getPosition().getX();
+					int gContY = gCont.getPosition().getY();
+					
+					if( ( (gContX == cX) || (gContX == pX) || (gContX == nX) ) &&
+						( (gContY == cY) || (gContY == pY) || (gContY == nY)) ) {
+						
+						if(gCont.getType().equals(this.truck.getGarbageType())) {
+					
+							this.truck.getCompleteCityMap().getGarbageContainers().add(gCont);
+							double currentOccupation = gCont.getCurrentOccupation();
+							
+							if( (currentOccupation <= (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
+								(currentOccupation > 0)) {
+								this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + currentOccupation);
+								gCont.setCurrentOccupation(0);
+								if(currentOccupation > 0) {
+									this.garbageCollected.put(gCont, currentOccupation);
+									System.out.println(getAID().getLocalName() + " : 1Collected " + currentOccupation 
+											+ " kg of garbage in (" + gCont.getPosition().getX() 
+											+ ", " + gCont.getPosition().getY() + ").");
+								}
+								else break;
+							}
+							
+							else if((currentOccupation > (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
+								(currentOccupation > 0)){
+								double valueToTake = this.truck.getMaxCapacity() - this.truck.getCurrentOccupation();
+								this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + valueToTake);
+								gCont.setCurrentOccupation(gCont.getCurrentOccupation() - valueToTake);
+								if(valueToTake > 0) {
+									this.garbageCollected.put(gCont, valueToTake);
+									System.out.println(getAID().getLocalName() + " : 2Collected " + valueToTake 
+											+ " kg of garbage in (" + gCont.getPosition().getX() 
+											+ ", " + gCont.getPosition().getY() + ").");
+								}
+								else break;
+							}
+							else break;
+						}
+					}
+				}
+			}
+		}
 
 		@Override
 		public void action() {
@@ -783,58 +903,14 @@ public class TruckAgent extends Agent{
 									this.truck.getPathWalked().add(nextPoint);
 									this.truck.setCurrentPosition(nextPoint);
 									
-									List<GarbageContainer> gContainers = new CopyOnWriteArrayList<GarbageContainer>(this.fullMap.getGarbageContainers());
-									synchronized(gContainers){
-										Iterator<GarbageContainer> itGContainer = gContainers.iterator();
-										while(itGContainer.hasNext()){
-											GarbageContainer gCont = itGContainer.next();
-											int gContX = gCont.getPosition().getX();
-											int gContY = gCont.getPosition().getY();
-											
-											if( ( (gContX == currentX) || (gContX == previousX) || (gContX == nextX) ) &&
-												( (gContY == currentY) || (gContY == previousY) || (gContY == nextY)) ) {
-												
-												if(gCont.getType().equals(this.truck.getGarbageType())) {
-											
-													this.truck.getCompleteCityMap().getGarbageContainers().add(gCont);
-													double currentOccupation = gCont.getCurrentOccupation();
-													
-													if( (currentOccupation <= (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
-														(currentOccupation > 0)) {
-														this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + currentOccupation);
-														gCont.setCurrentOccupation(0);
-														if(currentOccupation > 0) {
-															this.garbageCollected.put(gCont, currentOccupation);
-															System.out.println(getAID().getLocalName() + " : Collected " + currentOccupation 
-																	+ " kg of garbage in (" + gCont.getPosition().getX() 
-																	+ ", " + gCont.getPosition().getY() + ").");
-														}
-														else break;
-													}
-													
-													else if((currentOccupation > (this.truck.getMaxCapacity() - this.truck.getCurrentOccupation())) &&
-														(currentOccupation > 0)){
-														double valueToTake = this.truck.getMaxCapacity() - this.truck.getCurrentOccupation();
-														this.truck.setCurrentOccupation(this.truck.getCurrentOccupation() + valueToTake);
-														gCont.setCurrentOccupation(gCont.getCurrentOccupation() - valueToTake);
-														if(valueToTake > 0) {
-															this.garbageCollected.put(gCont, valueToTake);
-															System.out.println(getAID().getLocalName() + " : Collected " + valueToTake 
-																	+ " kg of garbage in (" + gCont.getPosition().getX() 
-																	+ ", " + gCont.getPosition().getY() + ").");
-														}
-														else break;
-													}
-													else break;
-												}
-											}
-										}
-									}
+									this.collectGarbage(currentX, previousX, nextX, currentY, previousY, nextY);
 								}
 							}
 						}
 						List<Point> nPathToBeWalked = new ArrayList<Point>();
+						List<Goal> nGoals = new ArrayList<Goal>();
 						this.truck.setPathToBeWalked(nPathToBeWalked);
+						this.truck.setGoals(nGoals);
 						
 						if(this.getAgent().getQueueSize() > 0) {
 							this.state = 2;
@@ -842,9 +918,9 @@ public class TruckAgent extends Agent{
 						}
 						
 						else {
+							boolean msgSent = false;
 							//checks if there is some GarbageContainer around this position.
 							List<GarbageContainer> gContainers = new CopyOnWriteArrayList<GarbageContainer>(this.fullMap.getGarbageContainers());
-							boolean msgSent = false;
 							synchronized(gContainers){
 								Iterator<GarbageContainer> itGContainer = gContainers.iterator();
 								while(itGContainer.hasNext()){
@@ -868,7 +944,7 @@ public class TruckAgent extends Agent{
 												gCont.setCurrentOccupation(0);
 												if(currentOccupation > 0) {
 													this.garbageCollected.put(gCont, currentOccupation);
-													System.out.println(getAID().getLocalName() + " : Collected " + currentOccupation + " kg of garbage in (" + gCont.getPosition().getX() + ", " + gCont.getPosition().getY() + ").");
+													System.out.println(getAID().getLocalName() + " : 3Collected " + currentOccupation + " kg of garbage in (" + gCont.getPosition().getX() + ", " + gCont.getPosition().getY() + ").");
 												}
 												else break;
 											}
@@ -880,7 +956,7 @@ public class TruckAgent extends Agent{
 												gCont.setCurrentOccupation(gCont.getCurrentOccupation() - valueToTake);
 												if(valueToTake > 0){
 													this.garbageCollected.put(gCont, valueToTake);
-													System.out.println(getAID().getLocalName() + " : Collected " + valueToTake + " kg of garbage in (" + gCont.getPosition().getX() + ", " + gCont.getPosition().getY() + ").");
+													System.out.println(getAID().getLocalName() + " : 4Collected " + valueToTake + " kg of garbage in (" + gCont.getPosition().getX() + ", " + gCont.getPosition().getY() + ").");
 												}
 												else break;
 											}
@@ -929,8 +1005,6 @@ public class TruckAgent extends Agent{
 							/*
 							 * Checks where to move.
 							 */
-							
-							
 							
 							Point up = new Point(currentX, previousY);
 							Point down = new Point(currentX, nextY);
@@ -1079,11 +1153,39 @@ public class TruckAgent extends Agent{
 									System.out.println(getAID().getLocalName() + " : Moved to (" + this.truck.getCurrentPosition().getX() + ", " + this.truck.getCurrentPosition().getY() + ").");
 								}
 							}
+							else {
+								System.out.println(getAID().getLocalName() + " : Something very strange happened. Going back to startPosition.");
+								
+								Goal g = new Goal(this.truck.getGoals().size() + 1, 
+										  this.truck.getCurrentPosition(),
+										  this.truck.getStartPosition());
+								this.truck.getGoals().add(g);
+						
+								g.setBestPath(new Path(1));
+								this.truck.buildTotalPathPlanning(2);
+								
+								List<Point> pathToBeWalked = new CopyOnWriteArrayList<Point>(this.truck.getPathToBeWalked());
+								synchronized(pathToBeWalked) {
+									Iterator<Point> itPathToBeWalked = pathToBeWalked.iterator();
+									while(itPathToBeWalked.hasNext()){
+										Point nextPoint = itPathToBeWalked.next();
+										String pointType = this.fullMap.getPointType(nextPoint);
+										
+										if(pointType != "") nextPoint.setType(pointType);
+										else nextPoint.setType("ROAD");
+										
+										this.truck.getPathWalked().add(nextPoint);
+										this.truck.setCurrentPosition(nextPoint);
+										
+										this.collectGarbage(currentX, previousX, nextX, currentY, previousY, nextY);
+									}
+								}
+							}
 						}
 					}
 					
 					if(this.counter == this.garbageCollected.size()){
-						this.state = 4;
+						this.state = 3;
 					}
 					
 					break;
@@ -1128,12 +1230,15 @@ public class TruckAgent extends Agent{
 							this.truck.buildTotalPathPlanning(2);
 						}
 						
+						System.out.print(getAID().getLocalName() + " : Received msg from " + msg.getSender() + ".");
+						
 						this.state = 1;
 					}
 					else block();
 					break;
 				
 				case 3:
+					System.out.println(getAID().getLocalName() + " : I'm finished and I'm leaving.");
 					this.finished = true;
 					this.state = 4;
 					break;

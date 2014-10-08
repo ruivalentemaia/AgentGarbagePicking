@@ -1,5 +1,6 @@
 package ai;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -9,6 +10,10 @@ import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
 
 import map.Crossroads;
 import map.Point;
@@ -217,10 +222,21 @@ public class GreedyPathSearch {
 	 * Greedy algorithm constructor.
 	 */
 	public GreedyPathSearch(Goal goal){
+		
+		Options options = new Options();
+		try {
+			options.importOptions("options.xml");
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			e.printStackTrace();
+		}
+		if(options.isActiveConsolePrinting())
+			System.out.println("\nCalculating best path...");
+		
 		this.openList = new ArrayList<Point>();
 		this.closedList = new ArrayList<Point>();
 		this.goal = goal;
 		this.fHeuristic = new HashMap<Double, Point>();
-		this.openList.add(goal.getStartPoint());
+		if(goal.getStartPoint().getX() != -1 && goal.getStartPoint().getY() != -1)
+			this.openList.add(goal.getStartPoint());
 	}
 }

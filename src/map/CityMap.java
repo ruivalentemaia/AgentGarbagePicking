@@ -570,6 +570,30 @@ public class CityMap {
 		return null;
 	}
 	
+	/*
+	 * Selects a Truck from its id.
+	 */
+	public Truck selectTruckFromId(int id){
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			if(t.getId() == id) return t;
+		}
+		return null;
+	}
+	
+	/*
+	 * Update Truck in truck list.
+	 */
+	public void updateTruck(Truck t) {
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t1 = itTruck.next();
+			if(t1.getId() == t.getId() && t1.getTruckName().equals(t.getTruckName()) && t1.getGarbageType().equals(t.getGarbageType())) {
+				t1 = t;
+			}
+		}
+	}
 	
 	/*
 	 * Updates the currentPosition of a parameter-passed Truck.
@@ -597,6 +621,34 @@ public class CityMap {
 			}
 		}
 		return "";
+	}
+	
+	
+	/*
+	 * Gets Truck list depending on the GarbageContainers garbageType associated
+	 * with this map.
+	 */
+	public List<Truck> getTrucksThatWillWork(){
+		List<Truck> truckList = new ArrayList<Truck>();
+		List<String> diffTypesOfContainer = new ArrayList<String>();
+		
+		Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			if(!diffTypesOfContainer.contains(gc.getType())){
+				diffTypesOfContainer.add(gc.getType());
+			}
+		}
+		
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			if(diffTypesOfContainer.contains(t.getGarbageType())){
+				truckList.add(t);
+			}
+		}
+		
+		return truckList;
 	}
 	
 	
@@ -2172,4 +2224,106 @@ public class CityMap {
 		System.out.println();
 	}
 	
+	
+	/*
+	 * Returns the String of the cityMap.
+	 */
+	public String getCityMapString() {
+		String[][] cityMap = new String[this.width][this.height];
+		
+		//allocates in the cityMap the housing area (that for now is all the area)
+		for(int i = 0; i < cityMap.length; i++){
+			for(int j = 0; j < cityMap[0].length; j++){
+				cityMap[i][j] = " ";
+			}
+		}
+		
+		//allocates in the cityMap String the crossroads centers.
+		Iterator<Crossroads> it = this.crossroads.iterator();
+		int x = 0, y = 0;
+		while(it.hasNext()) {
+			Crossroads c = it.next();
+			x = c.getCenter().getX();
+			y = c.getCenter().getY();
+			cityMap[x][y] = "o";
+			
+			Road left = c.getR1();
+			Iterator<Point> itPoints = left.getPoints().iterator();
+			while(itPoints.hasNext()){
+				Point p = itPoints.next();
+				cityMap[p.getX()][p.getY()] = "-";
+			}
+			
+			
+			Road up = c.getR2();
+			itPoints = up.getPoints().iterator();
+			while(itPoints.hasNext()){
+				Point p = itPoints.next();
+				cityMap[p.getX()][p.getY()] = "|";
+			}
+			
+			Road right = c.getR3();
+			itPoints = right.getPoints().iterator();
+			while(itPoints.hasNext()){
+				Point p = itPoints.next();
+				cityMap[p.getX()][p.getY()] = "-";
+			}
+			
+			
+			Road down = c.getR4();
+			itPoints = down.getPoints().iterator();
+			while(itPoints.hasNext()){
+				Point p = itPoints.next();
+				cityMap[p.getX()][p.getY()] = "|";
+			}
+		}
+		
+		for(int i = 1; i < cityMap.length-1; i++){
+			for(int j = 1; j < cityMap[i].length-1; j++){
+				if(cityMap[i-1][j] == "-" && cityMap[i+1][j] == "-" 
+				&& cityMap[i][j-1] == "|" && cityMap[i][j+1] == "|"){
+					cityMap[i][j] = "o";
+				}
+			}
+		}
+		
+		Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			cityMap[gc.getPosition().getX()][gc.getPosition().getY()] = "G";
+		}
+		
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			cityMap[t.getCurrentPosition().getX()][t.getCurrentPosition().getY()] = Integer.toString(t.getId());
+		}
+		
+		
+		String debugPrinter = "";
+		
+		for(int i = 0; i < cityMap[0].length; i++){
+			for(int j = 0; j < cityMap.length; j++){
+				debugPrinter += cityMap[j][i] + " ";
+			}
+			debugPrinter += "\n";
+		}
+		
+		debugPrinter += "\n";
+		
+		itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t1 = itTruck.next();
+			debugPrinter += "\t" + t1.getTruckName() + " : " + t1.getGarbageType() + ", " + t1.getCurrentOccupation() + "kg of " + t1.getMaxCapacity() + "kg.";
+		}
+		debugPrinter += "\n";
+		
+		itGC = this.garbageContainers.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer g = itGC.next();
+			debugPrinter += "\tGC" + g.getId() + " : " + g.getType() + ", " + g.getCurrentOccupation() + "kg, " + g.getMaxCapacity() + "kg."; 
+		}
+		
+		return debugPrinter;
+	}
 }

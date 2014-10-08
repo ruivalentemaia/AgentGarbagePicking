@@ -22,7 +22,9 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
+import ai.Options;
 import ai.Plan;
 import ai.TransportationAlgorithm;
 import units.Planner;
@@ -42,6 +44,7 @@ public class PlannerAgent extends Agent {
 	private static final long serialVersionUID = -8343519877395972050L;
 	
 	private Planner planner;
+	private Options options;
 	
 	public Planner getPlanner() {
 		return planner;
@@ -51,16 +54,31 @@ public class PlannerAgent extends Agent {
 		this.planner = planner;
 	}
 	
+	public Options getOptions() {
+		return options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
 	protected void setup() {
 		Object args[] = getArguments();
 		this.planner = (Planner) args[0];
 		System.out.println("My name is " + getAID().getName() + " and I'm active now.");
 		
-		this.buildInitialMessageForTrucks();
+		this.options = new Options();
+		try {
+			this.options.importOptions("options.xml");
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			e.printStackTrace();
+		}
 		
-		addBehaviour(new receiveReadyReply(this, this.planner));
+		this.buildInitialMessageForTrucks(this.options);
 		
-		addBehaviour(new sendOptimalPlan(this, this.planner));
+		addBehaviour(new receiveReadyReply(this, this.planner, this.options));
+		
+		addBehaviour(new sendOptimalPlan(this, this.planner, this.options));
 	}
 	
 	protected void takeDown() {
@@ -71,7 +89,7 @@ public class PlannerAgent extends Agent {
 	/**
 	 * 
 	 */
-	private void buildInitialMessageForTrucks() {
+	private void buildInitialMessageForTrucks(Options options) {
 		
 		final List<String> trucksTemp = new ArrayList<String>();
 		Iterator<String> itTruck = this.planner.getTruckAgents().iterator();
@@ -113,7 +131,7 @@ public class PlannerAgent extends Agent {
 			            AID agentID = agents[i].getName();
 			            if(agentID.getName().equals(t)) {
 			            	initialMsg.addReceiver(agentID);
-			            	System.out.println(getAID().getLocalName() + ": Ready? message to " + agentID.getLocalName());
+			            	//System.out.println(getAID().getLocalName() + ": Ready? message to " + agentID.getLocalName());
 			            }
 			            else continue;
 			        }
@@ -146,10 +164,36 @@ public class PlannerAgent extends Agent {
 		private boolean finished = false;
 		private int nMessagesReceived = 0;
 		private Planner planner;
+		private Options options;
 		
-		public receiveReadyReply(Agent a, Planner planner){
-			super(a);
+		public int getnMessagesReceived() {
+			return nMessagesReceived;
+		}
+
+		public void setnMessagesReceived(int nMessagesReceived) {
+			this.nMessagesReceived = nMessagesReceived;
+		}
+
+		public Planner getPlanner() {
+			return planner;
+		}
+
+		public void setPlanner(Planner planner) {
 			this.planner = planner;
+		}
+
+		public Options getOptions() {
+			return options;
+		}
+
+		public void setOptions(Options options) {
+			this.options = options;
+		}
+
+		public receiveReadyReply(Agent a, Planner planner, Options options){
+			super(a);
+			this.setPlanner(planner);
+			this.options = options;
 		}
 
 		@Override
@@ -161,8 +205,9 @@ public class PlannerAgent extends Agent {
 			
 			ACLMessage msg = receive(m1_and_m2);
 			if(msg != null){
-				System.out.println(this.getAgent().getLocalName() + ": Received the \"" + msg.getContent() + "\" from " + msg.getSender().getLocalName() + ".");
-				nMessagesReceived++;
+				if(this.options.isActiveConsolePrinting())
+					System.out.println(this.getAgent().getLocalName() + ": Received the \"" + msg.getContent() + "\" from " + msg.getSender().getLocalName() + ".");
+				setnMessagesReceived(getnMessagesReceived() + 1);
 				finished = true;
 			}
 			else block();
@@ -187,6 +232,7 @@ public class PlannerAgent extends Agent {
 		private String tempFilePath = System.getProperty("user.dir") + "/temp";
 		private int nMessages = 0;
 		private String filename = "";
+		private Options options;
 		
 		public Planner getPlanner() {
 			return planner;
@@ -212,9 +258,26 @@ public class PlannerAgent extends Agent {
 			this.nMessages = nMessages;
 		}
 
-		public sendOptimalPlan(Agent a, Planner p){
+		public String getFilename() {
+			return filename;
+		}
+
+		public void setFilename(String filename) {
+			this.filename = filename;
+		}
+
+		public Options getOptions() {
+			return options;
+		}
+
+		public void setOptions(Options options) {
+			this.options = options;
+		}
+
+		public sendOptimalPlan(Agent a, Planner p, Options options){
 			super(a);
 			this.planner = p;
+			this.options = options;
 		}
 		
 		/**
@@ -315,7 +378,7 @@ public class PlannerAgent extends Agent {
 			            	String filename = "";
 			            	try {
 			            		filename = this.exportPlanObject(plan);
-			            		this.filename = filename;
+			            		this.setFilename(filename);
 							} catch (ParserConfigurationException | TransformerException e) {
 								e.printStackTrace();
 							}
@@ -323,7 +386,8 @@ public class PlannerAgent extends Agent {
 			            	msg.setContent(filename);
 			            	send(msg);
 			            	
-			            	System.out.println(getAID().getLocalName() + ": Optimal plan sent to " + agentID.getLocalName() + ".");
+			            	if(this.options.isActiveConsolePrinting())
+			            		System.out.println(getAID().getLocalName() + ": Optimal plan sent to " + agentID.getLocalName() + ".");
 			            	
 			            	finished = true;
 			            }

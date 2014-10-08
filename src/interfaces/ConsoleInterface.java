@@ -580,15 +580,21 @@ public class ConsoleInterface {
 			//creates JADE AgentContainer.
 			Profile p = new ProfileImpl();
 			p.setParameter(Profile.MAIN_PORT, "8888");
+			p.setParameter(Profile.GUI, "gui");
 			Runtime rt = Runtime.instance();
 			AgentContainer ac = rt.createMainContainer(p);
 			
 			Iterator<Truck> itTruck = this.trucks.iterator();
+			List<Truck> trucks = new ArrayList<Truck>();
 			while(itTruck.hasNext()){
 				Truck t = itTruck.next();
 				t.prepare(this.map);
-				this.map.getTrucks().add(t);
+				trucks.add(t);
+				this.map.setTrucks(trucks);
 			}
+			
+			List<Truck> trucksThatWillWork = new ArrayList<Truck>();
+			trucksThatWillWork = this.map.getTrucksThatWillWork();
 			
 			/*
 			 * If the options are set to the mode where Agents have knowledge
@@ -601,7 +607,7 @@ public class ConsoleInterface {
 				
 				//adds all Trucks to the AgentContainer
 				List<String> truckAgents = new ArrayList<String>();
-				itTruck = this.trucks.iterator();
+				itTruck = trucksThatWillWork.iterator();
 				while(itTruck.hasNext()){
 					Truck t = itTruck.next();
 					try {
@@ -613,6 +619,16 @@ public class ConsoleInterface {
 					} catch (StaleProxyException e) {
 						System.err.println("Error launching " + agent.TruckAgent.class.getName());
 					}
+				}
+				
+				//initializes PrinterAgent
+				try {
+					Object[] args = new Object[1];
+					args[0] = this.map;
+					AgentController aController = ac.createNewAgent("printer", agent.PrinterAgent.class.getName(), args);
+					aController.start();
+				} catch(jade.wrapper.StaleProxyException e){
+					System.err.println("Error launching " + agent.PrinterAgent.class.getName());
 				}
 					
 				//adds TruckAgents to the Planner object.
@@ -627,8 +643,9 @@ public class ConsoleInterface {
 				} catch(jade.wrapper.StaleProxyException e) {
 					System.err.println("Error launching " + planner.getClass().getName());
 				}
+				System.out.println();
 			}
-				
+			
 			
 			/*
 			 * In case Options are set for the Agents not to know the full
@@ -739,6 +756,7 @@ public class ConsoleInterface {
 			case '1':
 				Truck t = this.buildAddTruck();
 				this.trucks.add(t);
+				this.exportTrucks("trucks.xml");
 				done = true;
 				break;
 			
@@ -748,6 +766,7 @@ public class ConsoleInterface {
 				if(truckToEdit != -1){
 					this.buildEditField(truckToEdit);
 				}
+				this.exportTrucks("trucks.xml");
 				done = true;
 				break;
 				
