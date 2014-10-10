@@ -2,6 +2,7 @@ package agent;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -11,6 +12,7 @@ import org.xml.sax.SAXException;
 import ai.Options;
 import units.Truck;
 import map.CityMap;
+import map.GarbageContainer;
 import map.Point;
 import jade.core.AID;
 import jade.core.Agent;
@@ -37,6 +39,7 @@ public class PrinterAgent extends Agent{
 	protected void setup() {
 		Object[] args = getArguments();
 		this.cityMap = (CityMap) args[0];
+		
 		System.out.println("My name is " + getAID().getName() + " and I'm active now.");
 		
 		addBehaviour(new receiveTruckInformation(this, this.cityMap));
@@ -161,9 +164,15 @@ public class PrinterAgent extends Agent{
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
-						this.getAgent().doWait(500);
-						System.out.println(this.cityMapString);
-						this.senders = new ArrayList<AID>();
+						
+						try {
+							Thread.sleep(250);
+							System.out.println(this.cityMapString);
+							this.senders = new ArrayList<AID>();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						
 					}
 				}
 				else {
@@ -179,7 +188,6 @@ public class PrinterAgent extends Agent{
 		public boolean done() {
 			return finished;
 		}
-		
 	}
-
+	
 }

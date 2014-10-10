@@ -674,6 +674,23 @@ public class CityMap {
 	
 	
 	/*
+	 * Retrieves a list of doubles containg the values of the currentOccupation
+	 * of each one of the GarbageContainers.
+	 */
+	public List<Double> getCurrentOccupations(){
+		List<Double> currentOccupations = new ArrayList<Double>();
+		
+		Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			currentOccupations.add(gc.getCurrentOccupation());
+		}
+		
+		return currentOccupations;
+	}
+	
+	
+	/*
 	 * 
 	 * 
 	 * 		CROSSROADS GENERATION
@@ -2352,14 +2369,7 @@ public class CityMap {
 			garbageCollected += t.getCurrentOccupation();
 		}
 		
-		double garbageToBeCollected = 0;
-		itGC = this.garbageContainers.iterator();
-		while(itGC.hasNext()){
-			GarbageContainer g = itGC.next();
-			garbageToBeCollected += g.getCurrentOccupation();
-		}
-		
-		debugPrinter += "\nGarbage Collected = " + garbageCollected + "\tGarbage to Collect = " + garbageToBeCollected;
+		debugPrinter += "\nGarbage Collected = " + garbageCollected;
 		
 		return debugPrinter;
 	}
