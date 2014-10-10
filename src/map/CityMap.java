@@ -543,8 +543,10 @@ public class CityMap {
 	}
 	
 	
-	/*
+	/**
 	 * Selects the GarbageContainers by garbage type passed as parameter.
+	 * @param type Garbage type.
+	 * @return List of GarbageContainer that corresponds to the passed type.
 	 */
 	public List<GarbageContainer> selectGarbageContainersByType(String type){
 		List<GarbageContainer> gcByType = new ArrayList<GarbageContainer>();
@@ -649,6 +651,25 @@ public class CityMap {
 		}
 		
 		return truckList;
+	}
+	
+	
+	/*
+	 * Retrieves the number of Trucks of the same Garbage type as the one
+	 * passed as parameter.
+	 */
+	public int getNumberOfTrucksOfThisType(Truck t){
+		Iterator<Truck> itTruck = this.trucks.iterator();
+		int counter = 1;
+		while(itTruck.hasNext()){
+			Truck truck = itTruck.next();
+			if(!t.getTruckName().equals(truck.getTruckName())){
+				if(t.getGarbageType().equals(truck.getGarbageType())){
+					counter++;
+				}
+			}
+		}
+		return counter;
 	}
 	
 	
@@ -2323,6 +2344,22 @@ public class CityMap {
 			GarbageContainer g = itGC.next();
 			debugPrinter += "\tGC" + g.getId() + " : " + g.getType() + ", " + g.getCurrentOccupation() + "kg, " + g.getMaxCapacity() + "kg."; 
 		}
+		
+		double garbageCollected = 0;
+		itTruck = this.trucks.iterator();
+		while(itTruck.hasNext()){
+			Truck t = itTruck.next();
+			garbageCollected += t.getCurrentOccupation();
+		}
+		
+		double garbageToBeCollected = 0;
+		itGC = this.garbageContainers.iterator();
+		while(itGC.hasNext()){
+			GarbageContainer g = itGC.next();
+			garbageToBeCollected += g.getCurrentOccupation();
+		}
+		
+		debugPrinter += "\nGarbage Collected = " + garbageCollected + "\tGarbage to Collect = " + garbageToBeCollected;
 		
 		return debugPrinter;
 	}

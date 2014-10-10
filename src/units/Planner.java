@@ -81,9 +81,10 @@ public class Planner{
 	 * @throws ParserConfigurationException 
 	 */
 	public void adjustGarbageAndTrucksNeeds(HashMap<String, Boolean> gbgTypeAndTrucks) throws ParserConfigurationException, SAXException, IOException {
-		Iterator it = gbgTypeAndTrucks.entrySet().iterator();
 		boolean allSet = true;
 		List<String> typesNotSet = new ArrayList<String>();
+		
+		Iterator it = gbgTypeAndTrucks.entrySet().iterator();
 		while(it.hasNext()){
 			Map.Entry<String, Boolean> pairs = (Map.Entry<String, Boolean>) it.next();
 			if(!pairs.getValue()){
@@ -242,7 +243,25 @@ public class Planner{
 			TransportationAlgorithm transportation = new TransportationAlgorithm(containerTrucks, containersGC);
 			transportation.performTransportationAlgorithm();
 			
-			this.transportPlan.add(transportation);
+			Truck e = transportation.getTrucks().get(transportation.getTrucks().size() - 1);
+			if(e.getTruckName().contains("E")){
+				this.trucks.add(e);
+				this.map.getTrucks().add(e);
+			}
+			
+			int numberTrucksInTransportation = transportation.getTrucks().size();
+			int numberTrucksHere = containerTrucks.size();
+			
+			if(numberTrucksInTransportation == numberTrucksHere) {
+				this.transportPlan.add(transportation);
+			}
+			
+			else {
+				containerTrucks = transportation.getTrucks();
+				transportation = new TransportationAlgorithm(containerTrucks, containersGC);
+				transportation.performTransportationAlgorithm();
+				this.transportPlan.add(transportation);
+			}
 		}
 	}
 

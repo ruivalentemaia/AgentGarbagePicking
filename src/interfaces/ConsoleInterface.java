@@ -593,8 +593,6 @@ public class ConsoleInterface {
 				this.map.setTrucks(trucks);
 			}
 			
-			List<Truck> trucksThatWillWork = new ArrayList<Truck>();
-			trucksThatWillWork = this.map.getTrucksThatWillWork();
 			
 			/*
 			 * If the options are set to the mode where Agents have knowledge
@@ -604,6 +602,11 @@ public class ConsoleInterface {
 			if(this.options.isAgentsKnowMap()){
 				
 				Planner planner = new Planner(this.map, this.trucks);
+				this.trucks = planner.getTrucks();
+				this.map = planner.getMap();
+				
+				List<Truck> trucksThatWillWork = new ArrayList<Truck>();
+				trucksThatWillWork = this.map.getTrucksThatWillWork();
 				
 				//adds all Trucks to the AgentContainer
 				List<String> truckAgents = new ArrayList<String>();

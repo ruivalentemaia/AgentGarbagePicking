@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -18,6 +20,7 @@ import org.xml.sax.SAXException;
 
 import units.Truck;
 import map.GarbageContainer;
+import map.Point;
 
 public class TransportationAlgorithm {
 	private int id;
@@ -1259,7 +1262,7 @@ public class TransportationAlgorithm {
 	/*
 	 * Performs the Transportation algorithm.
 	 */
-	public void performTransportationAlgorithm() {
+	public void performTransportationAlgorithm() throws ParserConfigurationException, SAXException, IOException {
 		this.initialize();
 		this.northwestCornerRule();
 		if(this.checkDegeneracy()){
@@ -1299,6 +1302,37 @@ public class TransportationAlgorithm {
 			iteration++;
 		}
 		
+		int numberTrucks = this.trucks.size();
+		int numberAssignments = this.valuesMatrix.length;
+		
+		/*
+		 * There's more assignments than Trucks, then it's necessary to create a
+		 * new Truck.
+		 */
+		if(numberAssignments > numberTrucks){
+			Random rId = new Random();
+			int id = rId.nextInt(1000-400) + 400;
+			String type = this.trucks.get(0).getGarbageType();
+			Truck t = new Truck(id, "E", type);
+			t.setCompleteCityMap(this.trucks.get(0).getCompleteCityMap());
+			t.getCompleteCityMap().setMapsFileName(this.trucks.get(0).getCompleteCityMap().getMapsFileName());
+			
+			double maxC = 0;
+			for(int i = 0; i < this.valuesMatrix[numberAssignments-1].length;i++){
+				 maxC += this.valuesMatrix[numberAssignments-1][i];
+			}
+			
+			t.setMaxCapacity(maxC);
+			
+			Point startingPoint = t.selectStartingPoint();
+			t.setStartPosition(startingPoint);
+			t.setCurrentPosition(startingPoint);
+			t.buildGoalsList();
+			t.setGarbageContainersToGoTo(this.garbageContainers);
+			
+			this.trucks.add(t);
+		}
+		
 		/*
 		 * Fills the optimalPlans object with the optimal plan for each
 		 * Truck.
@@ -1311,6 +1345,7 @@ public class TransportationAlgorithm {
 			
 			HashMap<GarbageContainer, Double> qToCollect = new HashMap<GarbageContainer, Double>();
 			HashMap<GarbageContainer, Boolean> cRegistry = new HashMap<GarbageContainer, Boolean>();
+			
 			Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
 			List<Double> valuesToCollect = new ArrayList<Double>();
 			while(itGC.hasNext()){
@@ -1321,7 +1356,6 @@ public class TransportationAlgorithm {
 					qToCollect.put(gc, quantityToCollect);
 					cRegistry.put(gc, false);
 					counterColumn++;
-					
 				}
 			}
 			
@@ -1354,12 +1388,15 @@ public class TransportationAlgorithm {
 				else counterTrue++;
 			}
 			
+			//this Truck is able to collect all garbage from all garbagecontainers.
 			if(counterFalse == continueList.size()) {
 				counterLine++;
 				Plan plan = new Plan(t, qToCollect, cRegistry);
 				this.optimalPlans.add(plan);
 				break;
 			}
+			
+			//this Truck is able to collect all garbage from some containers but not all.
 			else {
 				counterLine++;
 				Plan plan = new Plan(t, qToCollect, cRegistry);
