@@ -28,6 +28,7 @@ import ai.Options;
 import ai.Plan;
 import ai.TransportationAlgorithm;
 import units.Planner;
+import units.Truck;
 import map.GarbageContainer;
 import jade.core.AID;
 import jade.core.Agent;
@@ -79,6 +80,8 @@ public class PlannerAgent extends Agent {
 		addBehaviour(new receiveReadyReply(this, this.planner, this.options));
 		
 		addBehaviour(new sendOptimalPlan(this, this.planner, this.options));
+		
+		addBehaviour(new sendTrucksToStatAgent(this));
 	}
 	
 	protected void takeDown() {
@@ -401,5 +404,58 @@ public class PlannerAgent extends Agent {
 		public boolean done() {
 			return finished;
 		}
+	}
+	
+	class sendTrucksToStatAgent extends SimpleBehaviour {
+		
+		private static final long serialVersionUID = -7870864831561938768L;
+		
+		private boolean finished = false;
+		
+		public sendTrucksToStatAgent(Agent a){
+			super(a);
+		}
+
+		@Override
+		public void action() {
+			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+			
+			String content = "";
+			Iterator<Truck> itTruck = planner.getTrucks().iterator();
+			while(itTruck.hasNext()){
+				Truck t = itTruck.next();
+				content += t.getTruckName() + "," + t.getMaxCapacity() + ";";
+			}
+			msg.setOntology("Stats");
+			msg.setContent(content);
+			
+			
+			AMSAgentDescription [] agents = null;
+	        try {
+	            SearchConstraints c = new SearchConstraints();
+	            c.setMaxResults ( new Long(-1) );
+	            agents = AMSService.search( this.getAgent(), new AMSAgentDescription (), c );
+	        }
+	        catch (Exception e) { e.printStackTrace();}
+			
+	        String t = "stats";
+	        for (int i=0; i<agents.length;i++) {
+	            AID agentID = agents[i].getName();
+	            if(agentID.getLocalName().equals(t)) {
+	            	msg.addReceiver(agentID);
+	            }
+	            else continue;
+	        }
+	        
+	        System.out.println(getAID().getLocalName() + " : Sent Truck names and maxCapacities to stats");
+	        send(msg);
+	        this.finished = true;
+		}
+
+		@Override
+		public boolean done() {
+			return finished;
+		}
+		
 	}
 }

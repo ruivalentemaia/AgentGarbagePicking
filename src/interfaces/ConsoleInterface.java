@@ -646,7 +646,14 @@ public class ConsoleInterface {
 				} catch(jade.wrapper.StaleProxyException e) {
 					System.err.println("Error launching " + planner.getClass().getName());
 				}
-				System.out.println();
+				
+				//adds StatAgent to the AgentContainer
+				try {
+					AgentController aController = ac.createNewAgent("stats", agent.StatAgent.class.getName(), null);
+					aController.start();
+				} catch(jade.wrapper.StaleProxyException e){
+					System.err.println("Error launching stats Agent.");
+				}
 			}
 			
 			
