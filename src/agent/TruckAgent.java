@@ -583,6 +583,8 @@ public class TruckAgent extends Agent{
 			 */
 			case 2:
 				List<Goal> goals = this.truck.getGoals();
+				int pathSize = this.truck.getPathToBeWalked().size();
+				int stepCounter = 0;
 				Iterator<Point> pathToBeWalked = this.truck.getPathToBeWalked().iterator();
 				
 				while(pathToBeWalked.hasNext()){
@@ -590,6 +592,7 @@ public class TruckAgent extends Agent{
 					pathToBeWalked.remove();
 					
 					this.truck.setCurrentPosition(firstPoint);
+					stepCounter++;
 					this.truck.getPathWalked().add(firstPoint);
 					this.truck.getCompleteCityMap().updateTruckPosition(this.truck);
 					
@@ -612,7 +615,7 @@ public class TruckAgent extends Agent{
 				}
 				
 				//stop condition.
-				if(this.truck.getPathToBeWalked().isEmpty()){
+				if( pathSize == stepCounter){
 					this.state = 5;
 				}
 				break;
@@ -714,6 +717,8 @@ public class TruckAgent extends Agent{
 			default:
 				if(this.options.isActiveConsolePrinting())
 					System.out.println(getAID().getLocalName() + ": Finished working and I'm exiting.");
+				
+				addBehaviour(new sendStatistics(myAgent, this.truck));
 				this.finished = true;
 				break;
 			}
@@ -723,6 +728,99 @@ public class TruckAgent extends Agent{
 		public boolean done() {
 			return this.finished;
 		}
+	}
+	
+	/**
+	 * 
+	 * @author ruivalentemaia
+	 *
+	 */
+	class sendStatistics extends SimpleBehaviour {
+
+		private static final long serialVersionUID = 5490684900734207525L;
+		
+		private boolean finished = false;
+		private Truck truck;
+		
+		public Truck getTruck() {
+			return truck;
+		}
+
+		public void setTruck(Truck truck) {
+			this.truck = truck;
+		}
+
+		public sendStatistics(Agent a, Truck t){
+			super(a);
+			this.setTruck(t);
+		}
+
+		@Override
+		public void action() {
+			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+			msg.setOntology("StatsTruck");
+			
+			String content = "";
+			if(this.truck.getTruckName() != null){
+				content += this.truck.getTruckName();
+			}
+			else {
+				block();
+			}
+			
+			if(this.truck.getMaxCapacity() > 0){
+				content += ";" + this.truck.getMaxCapacity();
+			}
+			else {
+				block();
+			}
+			
+			if( (this.truck.getPathWalked().size() > 0) && (this.truck.getPathToBeWalked().size() == 0)){
+				content += ";" + Integer.toString(this.truck.getPathWalked().size());
+			}
+			else {
+				block();
+			}
+			
+			if((this.truck.getCurrentOccupation() > 0) && (this.truck.getPathToBeWalked().size() == 0)){
+				content += ";" + this.truck.getCurrentOccupation();
+			}
+			else {
+				block();
+			}
+			
+			AMSAgentDescription [] agents = null;
+	        try {
+	            SearchConstraints c = new SearchConstraints();
+	            c.setMaxResults ( new Long(-1) );
+	            agents = AMSService.search( this.getAgent(), new AMSAgentDescription (), c );
+	        }
+	        catch (Exception e) { e.printStackTrace();}
+			
+	        String t = "stats";
+	        for (int i=0; i<agents.length;i++) {
+	            AID agentID = agents[i].getName();
+	            if(agentID.getLocalName().equals(t)) {
+	            	msg.addReceiver(agentID);
+	            }
+	            else continue;
+	        }
+	        
+	        if(content.split(";").length == 4)
+	        	msg.setContent(content);
+	        
+			send(msg);
+			
+			System.out.println(getAID().getLocalName() + " : Sent statistics about " + this.truck.getTruckName() + " to stats.");
+			
+			this.finished = true;
+		}
+
+		@Override
+		public boolean done() {
+			return finished;
+		}
+		
 	}
 	
 	class noMapBehaviour extends SimpleBehaviour {

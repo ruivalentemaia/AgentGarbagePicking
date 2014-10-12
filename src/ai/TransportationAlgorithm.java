@@ -244,8 +244,10 @@ public class TransportationAlgorithm {
 				while(itGoals.hasNext()){
 					Goal g = itGoals.next();
 					if(g.getBestPath().getLength() != 0) {
-						this.costsMatrix[truckIndex][goalIndex] = g.getBestPath().getLength();
-						goalIndex++;
+						//if(goalIndex < this.costsMatrix[truckIndex].length) {
+							this.costsMatrix[truckIndex][goalIndex] = g.getBestPath().getLength();
+							goalIndex++;
+						//}
 					}
 				}
 				truckIndex++;

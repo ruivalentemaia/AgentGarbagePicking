@@ -1,0 +1,6 @@
+Truck,MaxCapacity,GarbageCollected,DistanceCovered
+t1, 100.0, 100.0, 106
+E, 174.0, 174.0, 108
+t4, 330.0, 3.0, 123
+t2, 150.0, 150.0, 131
+t3, 290.0, 290.0, 134
