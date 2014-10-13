@@ -45,6 +45,7 @@ public class ConsoleInterface {
 	private List<Truck> trucks;
 	private CityMap map;
 	private Options options;
+	private List<Runtime> runtimesList;
 	
 	private String trucksFilePath = System.getProperty("user.dir") + "/config/trucks";
 	
@@ -574,111 +575,139 @@ public class ConsoleInterface {
 	private void start() throws ParserConfigurationException, SAXException, IOException, ControllerException {
 		if( (this.trucks.size() > 0) && (this.map != null) ) {
 			
-			this.map.printCityMapString();
-			this.options.importOptions("options.xml");
 			
-			//creates JADE AgentContainer.
-			Profile p = new ProfileImpl();
-			p.setParameter(Profile.MAIN_PORT, "8888");
-			p.setParameter(Profile.GUI, "gui");
-			Runtime rt = Runtime.instance();
-			AgentContainer ac = rt.createMainContainer(p);
-			
-			Iterator<Truck> itTruck = this.trucks.iterator();
-			List<Truck> trucks = new ArrayList<Truck>();
-			while(itTruck.hasNext()){
-				Truck t = itTruck.next();
-				t.prepare(this.map);
-				trucks.add(t);
-				this.map.setTrucks(trucks);
-			}
-			
-			
-			/*
-			 * If the options are set to the mode where Agents have knowledge
-			 * of the full CityMap object, then it starts the Trucks and the 
-			 * PlannerAgent.
-			 */
-			if(this.options.isAgentsKnowMap()){
+			if(this.runtimesList.size() == 0) {
+				this.map.printCityMapString();
+				this.options.importOptions("options.xml");
 				
-				Planner planner = new Planner(this.map, this.trucks);
-				this.trucks = planner.getTrucks();
-				this.map = planner.getMap();
 				
-				List<Truck> trucksThatWillWork = new ArrayList<Truck>();
-				trucksThatWillWork = this.map.getTrucksThatWillWork();
+				//creates JADE AgentContainer.
+				Profile p = new ProfileImpl();
+				p.setParameter(Profile.MAIN_PORT, "8888");
+				p.setParameter(Profile.GUI, "gui");
+				Runtime rt = Runtime.instance();
+				AgentContainer ac = rt.createMainContainer(p);
+				this.runtimesList.add(rt);
 				
-				//adds all Trucks to the AgentContainer
-				List<String> truckAgents = new ArrayList<String>();
-				itTruck = trucksThatWillWork.iterator();
+				Iterator<Truck> itTruck = this.trucks.iterator();
+				List<Truck> trucks = new ArrayList<Truck>();
 				while(itTruck.hasNext()){
-					Truck t = itTruck.next();
 					try {
-						Object[] args = new Object[1];
-						args[0] = t;
-						AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
-						aController.start();
-						truckAgents.add(aController.getName());
-					} catch (StaleProxyException e) {
-						System.err.println("Error launching " + agent.TruckAgent.class.getName());
+						Truck t = itTruck.next();
+						t.prepare(this.map);
+						trucks.add(t);
+						this.map.setTrucks(trucks);
+					} catch(NullPointerException e){
+						Truck t = itTruck.next();
+						System.err.print(t.getTruckName());
+						e.printStackTrace();
 					}
-				}
-				
-				//initializes PrinterAgent
-				try {
-					Object[] args = new Object[1];
-					args[0] = this.map;
-					AgentController aController = ac.createNewAgent("printer", agent.PrinterAgent.class.getName(), args);
-					aController.start();
-				} catch(jade.wrapper.StaleProxyException e){
-					System.err.println("Error launching " + agent.PrinterAgent.class.getName());
-				}
 					
-				//adds TruckAgents to the Planner object.
-				planner.setTruckAgents(truckAgents);
-				
-				//adds PlannerAgent to the AgentContainer
-				try {
-					Object[] args = new Object[1];
-					args[0] = planner;
-					AgentController aController = ac.createNewAgent("planner", agent.PlannerAgent.class.getName(), args);
-					aController.start();
-				} catch(jade.wrapper.StaleProxyException e) {
-					System.err.println("Error launching " + planner.getClass().getName());
 				}
 				
-				//adds StatAgent to the AgentContainer
-				try {
-					AgentController aController = ac.createNewAgent("stats", agent.StatAgent.class.getName(), null);
-					aController.start();
-				} catch(jade.wrapper.StaleProxyException e){
-					System.err.println("Error launching stats Agent.");
-				}
-			}
-			
-			
-			/*
-			 * In case Options are set for the Agents not to know the full
-			 * CityMap, then it starts only the Trucks.
-			 */
-			else {
-				//adds all Trucks to the AgentContainer
-				List<String> truckAgents = new ArrayList<String>();
-				itTruck = this.trucks.iterator();
-				while(itTruck.hasNext()){
-					Truck t = itTruck.next();
+				/*
+				 * If the options are set to the mode where Agents have knowledge
+				 * of the full CityMap object, then it starts the Trucks and the 
+				 * PlannerAgent.
+				 */
+				if(this.options.isAgentsKnowMap()){
+					
+					Planner planner = new Planner(this.map, this.trucks);
+					this.trucks = planner.getTrucks();
+					this.map = planner.getMap();
+					
+					List<Truck> trucksThatWillWork = new ArrayList<Truck>();
+					trucksThatWillWork = this.map.getTrucksThatWillWork();
+					
+					ac.createNewAgent("sniffer", "jade.tools.rma.rma", null).start();
+					
+					//adds all Trucks to the AgentContainer
+					List<String> truckAgents = new ArrayList<String>();
+					itTruck = trucksThatWillWork.iterator();
+					while(itTruck.hasNext()){
+						Truck t = itTruck.next();
+						try {
+							Object[] args = new Object[1];
+							args[0] = t;
+							AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+							aController.start();
+							truckAgents.add(aController.getName());
+						} catch (StaleProxyException e) {
+							System.err.println("Error launching " + agent.TruckAgent.class.getName());
+						}
+					}
+					
+					
+					//initializes PrinterAgent
 					try {
 						Object[] args = new Object[1];
-						args[0] = t;
-						AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+						args[0] = this.map;
+						AgentController aController = ac.createNewAgent("printer", agent.PrinterAgent.class.getName(), args);
 						aController.start();
-						truckAgents.add(aController.getName());
-					} catch (StaleProxyException e) {
-						System.err.println("Error launching " + agent.TruckAgent.class.getName());
+					} catch(jade.wrapper.StaleProxyException e){
+						System.err.println("Error launching " + agent.PrinterAgent.class.getName());
+					}
+						
+					//adds TruckAgents to the Planner object.
+					planner.setTruckAgents(truckAgents);
+					
+					//adds PlannerAgent to the AgentContainer
+					try {
+						Object[] args = new Object[1];
+						args[0] = planner;
+						AgentController aController = ac.createNewAgent("planner", agent.PlannerAgent.class.getName(), args);
+						aController.start();
+					} catch(jade.wrapper.StaleProxyException e) {
+						System.err.println("Error launching " + planner.getClass().getName());
+					}
+					
+					//adds StatAgent to the AgentContainer
+					try {
+						AgentController aController = ac.createNewAgent("stats", agent.StatAgent.class.getName(), null);
+						aController.start();
+					} catch(jade.wrapper.StaleProxyException e){
+						System.err.println("Error launching stats Agent.");
 					}
 				}
+				
+				
+				/*
+				 * In case Options are set for the Agents not to know the full
+				 * CityMap, then it starts only the Trucks.
+				 */
+				else {
+					ac.createNewAgent("sniffer", "jade.tools.rma.rma", null).start();
+					
+					//adds all Trucks to the AgentContainer
+					List<String> truckAgents = new ArrayList<String>();
+					itTruck = this.trucks.iterator();
+					while(itTruck.hasNext()){
+						Truck t = itTruck.next();
+						try {
+							Object[] args = new Object[1];
+							args[0] = t;
+							AgentController aController = ac.createNewAgent(t.getTruckName(), agent.TruckAgent.class.getName(), args);
+							aController.start();
+							truckAgents.add(aController.getName());
+						} catch (StaleProxyException e) {
+							System.err.println("Error launching " + agent.TruckAgent.class.getName());
+						}
+					}
+					
+					//initializes PrinterAgent
+					try {
+						Object[] args = new Object[1];
+						args[0] = this.map;
+						AgentController aController = ac.createNewAgent("printer", agent.PrinterAgent.class.getName(), args);
+						aController.start();
+					} catch(jade.wrapper.StaleProxyException e){
+						System.err.println("Error launching " + agent.PrinterAgent.class.getName());
+					}
+					
+				}
+				
 			}
-			
+			else return;
 		}
 		else return;
 	}
@@ -1032,6 +1061,8 @@ public class ConsoleInterface {
 			this.importTrucks("trucks.xml");
 		}
 		
+		this.runtimesList = new ArrayList<Runtime>();
+		
 		int mainMenuOption = 0;
 		
 		while(mainMenuOption != 5){
@@ -1039,12 +1070,7 @@ public class ConsoleInterface {
 			mainMenuOption = this.treatMainMenuSelectedOption(mainMenuOption);
 			if(mainMenuOption >= 1 && mainMenuOption <= 4)
 				mainMenuOption = this.treatMainMenuSelectedOption(mainMenuOption);
+			if(mainMenuOption == 5) break;
 		}
-		
-		/*
-		do {
-			
-		} while(mainMenuOption != 5);
-		*/
 	}
 }

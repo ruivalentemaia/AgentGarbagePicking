@@ -1,1 +1,1 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><options><trucksSamePos>false</trucksSamePos><allowPlannerAgentToCreateTrucks>true</allowPlannerAgentToCreateTrucks><activeConsolePrinting>true</activeConsolePrinting><agentsKnowMap>true</agentsKnowMap></options>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><options><trucksSamePos>false</trucksSamePos><allowPlannerAgentToCreateTrucks>true</allowPlannerAgentToCreateTrucks><activeConsolePrinting>false</activeConsolePrinting><agentsKnowMap>false</agentsKnowMap></options>

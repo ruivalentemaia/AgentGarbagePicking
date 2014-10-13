@@ -290,6 +290,18 @@ public class CityMap {
 	}
 	
 	/*
+	 * Counts the total amount of garbage in the map.
+	 */
+	public double countAllGarbage() {
+		Iterator<GarbageContainer> itGC = this.garbageContainers.iterator();
+		double garbage = 0;
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			garbage += gc.getCurrentOccupation();
+		}
+		return garbage;
+	}
+	/*
 	 * Checks if point is a Road or Crossroads.
 	 */
 	public boolean checkIfPointIsRoadOrCrossroads(Point p) {

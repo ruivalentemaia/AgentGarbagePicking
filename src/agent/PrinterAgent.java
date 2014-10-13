@@ -166,7 +166,7 @@ public class PrinterAgent extends Agent{
 						}
 						
 						try {
-							Thread.sleep(250);
+							Thread.sleep(100);
 							System.out.println(this.cityMapString);
 							this.senders = new ArrayList<AID>();
 						} catch (InterruptedException e) {

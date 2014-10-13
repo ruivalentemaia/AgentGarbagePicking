@@ -357,6 +357,110 @@ public class Truck {
 		return false;
 	}
 	
+	/*
+	 * Checks if the new position is the same as last position.
+	 */
+	public boolean verifyMovement(Point p, boolean stuck){
+		boolean walked = false;
+		
+		if(!stuck) {
+			if(this.pathWalked.size() >= 1){
+				Point last = this.pathWalked.get(this.pathWalked.size()-1);
+				if(last.getX() == p.getX() && last.getY() == p.getY()){
+					walked = true;
+					return walked;
+				}
+			}
+		}
+		
+		else {
+			walked = false;
+		}
+		
+		return walked;
+	}
+	
+
+	
+	/*
+	 * Gets the GarbageContainer located closest to the Truck's currentPosition.
+	 */
+	public GarbageContainer getClosestGC(){
+		Iterator<GarbageContainer> itGC = this.completeCityMap.getGarbageContainers().iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			
+			int gcX = gc.getPosition().getX();
+			int gcY = gc.getPosition().getY();
+			
+			int currentX = this.getCurrentPosition().getX();
+			int currentY = this.getCurrentPosition().getY();
+			
+			int nextX = currentX + 1;
+			int nextY = currentY + 1;
+			
+			int previousX = currentX-1;
+			int previousY = currentY-1;
+			
+			if( (gcX == nextX && gcY == currentY) || (gcX == currentX && gcY == nextY)
+			 || (gcX == previousX && gcY == currentY) || (gcX == currentX && gcY == previousY) ) {
+				return gc;
+			}
+		}
+		return null;
+	}
+	
+	
+	/*
+	 * Check if there's a GC in the adjacent positions.
+	 */
+	public boolean checkForGC(){
+		Iterator<GarbageContainer> itGC = this.completeCityMap.getGarbageContainers().iterator();
+		while(itGC.hasNext()){
+			GarbageContainer gc = itGC.next();
+			
+			int gcX = gc.getPosition().getX();
+			int gcY = gc.getPosition().getY();
+			
+			int currentX = this.getCurrentPosition().getX();
+			int currentY = this.getCurrentPosition().getY();
+			
+			int nextX = currentX + 1;
+			int nextY = currentY + 1;
+			
+			int previousX = currentX-1;
+			int previousY = currentY-1;
+			
+			if( (gcX == nextX && gcY == currentY) || (gcX == currentX && gcY == nextY)
+			 || (gcX == previousX && gcY == currentY) || (gcX == currentX && gcY == previousY) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
+	/*
+	 * Checks if a given position is closest to a GC than the previous position.
+	 */
+	public boolean isItCloser(GarbageContainer gc, Point current, Point next){
+		boolean closer = false;
+		
+		double h1 = Math.sqrt(Math.pow((current.getX() - gc.getPosition().getX()), 2) 
+							+ Math.pow((current.getY() - gc.getPosition().getY()), 2));
+		double h2 = Math.sqrt(Math.pow((next.getX() - gc.getPosition().getX()), 2) 
+							+ Math.pow((next.getY() - gc.getPosition().getY()), 2));
+		
+		if(h2 < h1){
+			closer = true;
+		}
+		else {
+			closer = false;
+		}
+		
+		return closer;
+	}
+	
 	
 	/*
 	 * Remove repeated Goals from the goals list.
@@ -792,7 +896,7 @@ public class Truck {
 				int skip = 0;
 				while(itPathWalked.hasNext()){
 					Point p = itPathWalked.next();
-					if(p.getType().equals("CROSSROADS")){
+					if(p.getType() != null && p.getType().equals("CROSSROADS")){
 						lastCrossroadCrossed.setCenter(new Point(p.getX(), p.getY()));
 						Iterator<Crossroads> itCross = this.completeCityMap.getCrossroads().iterator();
 						while(itCross.hasNext()){
